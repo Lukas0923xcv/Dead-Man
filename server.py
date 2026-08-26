@@ -915,15 +915,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           Vertrauliche Dateien, Zugangsdaten, Dokumente und digitale Nachlässe sicher speichern. Ende-zu-Ende verschlüsselt mit 256-Bit Split-Keys in der Schweiz unter strengsten Datenschutzrichtlinien.
         </p>
         <div class="hero-actions-clean">
-          <button class="btn-hero-primary" onclick="navigateTo('app', 'encrypt')" data-i18n="btn_start_encrypt">
-            Jetzt verschlüsseln →
-          </button>
-          <button class="btn-hero-secondary" onclick="navigateTo('app', 'decrypt')">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
-            </svg>
-            <span data-i18n="btn_decrypt_record">Eintrag entschlüsseln</span>
+          <button class="btn-hero-primary" onclick="navigateTo('app')" data-i18n="btn_open_vault">
+            Tresor öffnen →
           </button>
           <button class="btn-hero-info" onclick="openInfoModal()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1253,8 +1246,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         hero_title: "Zero-Knowledge Digitaler Tresor & Kryptographische Verwahrung",
         hero_desc: "Vertrauliche Dateien, Zugangsdaten, Dokumente und digitale Nachlässe sicher speichern. Ende-zu-Ende verschlüsselt mit 256-Bit Split-Keys in der Schweiz unter strengsten Datenschutzrichtlinien.",
-        btn_start_encrypt: "Jetzt verschlüsseln →",
-        btn_decrypt_record: "Eintrag entschlüsseln",
+        btn_open_vault: "Tresor öffnen →",
         btn_more_info: "Mehr Informationen",
         
         hl1_title: "Dual-Key Split (256-Bit)",
@@ -1353,8 +1345,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         hero_title: "Zero-Knowledge Digital Vault & Cryptographic Custody",
         hero_desc: "Store confidential files, credentials, documents, and digital inheritances. Encrypted end-to-end with 256-bit split keys and hosted in Switzerland under strict data protection principles.",
-        btn_start_encrypt: "Start Encrypting →",
-        btn_decrypt_record: "Decrypt Record",
+        btn_open_vault: "Open Vault →",
         btn_more_info: "More Information",
         
         hl1_title: "Dual-Key Split (256-Bit)",
