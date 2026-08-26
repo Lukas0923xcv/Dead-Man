@@ -2067,17 +2067,35 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           item.className = 'vault-item-card';
 
           let statusClass = 'active';
-          let statusText = currentLang === 'de' ? 'Aktiv (Normal)' : 'Active (Normal)';
+          let statusText = currentLang === 'de' ? 'Aktiv (Geschützt)' : 'Active (Secured)';
+          let metaHtml = '';
+          const recipient = v.has_recipient_email 
+            ? (currentLang === 'de' ? '✉️ Empfänger hinterlegt' : '✉️ Recipient registered')
+            : '—';
+
           if (v.mode === 'inherited') {
             statusClass = 'inherited';
             statusText = currentLang === 'de' ? 'Nachlass ausgelöst' : 'Inherited Mode';
+            const purgeText = v.time_left_formatted || '30 Tage';
+            metaHtml = `
+              <span class="vault-meta-item" style="color: #d29922;">🗑️ <strong>${currentLang === 'de' ? 'Endgültige Löschung in: ' : 'Final purge in: '}${purgeText}</strong></span>
+              <span class="vault-meta-item">📧 <strong>${recipient}</strong></span>
+            `;
           } else if (v.mode === 'stopped') {
             statusClass = 'stopped';
             statusText = currentLang === 'de' ? 'Verbindung getrennt' : 'Disconnected';
+            const purgeText = v.time_left_formatted || '30 Tage';
+            metaHtml = `
+              <span class="vault-meta-item" style="color: #f85149;">🗑️ <strong>${currentLang === 'de' ? 'Endgültige Löschung in: ' : 'Final purge in: '}${purgeText}</strong></span>
+              <span class="vault-meta-item">🛑 <strong>${currentLang === 'de' ? 'Weitergabe deaktiviert' : 'Handover disabled'}</strong></span>
+            `;
+          } else {
+            // Normal mode: Active vault on logged-in account
+            metaHtml = `
+              <span class="vault-meta-item">🛡️ <strong>${currentLang === 'de' ? 'Dead-Man-Switch: 30 Tage Inaktivitäts-Intervall' : 'Dead-Man-Switch: 30-Day Inactivity Interval'}</strong></span>
+              <span class="vault-meta-item">📧 <strong>${recipient}</strong></span>
+            `;
           }
-
-          const countdown = v.time_left_formatted || 'N/A';
-          const recipient = v.has_recipient_email ? '✉️ Registriert' : '—';
 
           item.innerHTML = `
             <div class="vault-card-top">
@@ -2085,13 +2103,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <span class="status-pill ${statusClass}">${statusText}</span>
             </div>
             <div class="vault-meta-row">
-              <span class="vault-meta-item">⏱️ <strong>${countdown}</strong></span>
-              <span class="vault-meta-item">📧 <strong>${recipient}</strong></span>
+              ${metaHtml}
             </div>
             <div class="vault-actions-row">
               <button class="btn-vault-action primary" onclick="openDecryptForCode('${v.code}')">🔓 ${currentLang === 'de' ? 'Entschlüsseln' : 'Decrypt'}</button>
-              <button class="btn-vault-action" onclick="openInheritForCode('${v.code}')">🚀 ${currentLang === 'de' ? 'Nachlass' : 'Inherit'}</button>
-              <button class="btn-vault-action danger" onclick="openStopInheritForCode('${v.code}')">🛑 ${currentLang === 'de' ? 'Trennen' : 'Stop'}</button>
+              ${v.mode === 'normal' ? `
+                <button class="btn-vault-action" onclick="openInheritForCode('${v.code}')">🚀 ${currentLang === 'de' ? 'Nachlass auslösen' : 'Trigger Handover'}</button>
+                <button class="btn-vault-action danger" onclick="openStopInheritForCode('${v.code}')">🛑 ${currentLang === 'de' ? 'Verbindung trennen' : 'Disconnect'}</button>
+              ` : ''}
             </div>
           `;
           list.appendChild(item);
@@ -2764,6 +2783,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 self.send_error_response(HTTPStatus.UNAUTHORIZED, "Authentication required. Please log in to view your vaults.")
                 return
 
+            storage.touch_user_vaults(current_user, self.server.storage_dir)
             vaults = storage.get_user_vaults(
                 username=current_user,
                 inactivity_days=int(self.server.inactivity_days),
