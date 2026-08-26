@@ -2076,18 +2076,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           if (v.mode === 'inherited') {
             statusClass = 'inherited';
             statusText = currentLang === 'de' ? 'Nachlass ausgelöst' : 'Inherited Mode';
-            const purgeText = v.time_left_formatted || '30 Tage';
             metaHtml = `
-              <span class="vault-meta-item" style="color: #d29922;">🗑️ <strong>${currentLang === 'de' ? 'Endgültige Löschung in: ' : 'Final purge in: '}${purgeText}</strong></span>
               <span class="vault-meta-item">📧 <strong>${recipient}</strong></span>
+              <span class="vault-meta-item" style="color: #d29922;">⚠️ <strong>${currentLang === 'de' ? 'Schlüssel B übergeben' : 'Key B released'}</strong></span>
             `;
           } else if (v.mode === 'stopped') {
             statusClass = 'stopped';
             statusText = currentLang === 'de' ? 'Verbindung getrennt' : 'Disconnected';
-            const purgeText = v.time_left_formatted || '30 Tage';
             metaHtml = `
-              <span class="vault-meta-item" style="color: #f85149;">🗑️ <strong>${currentLang === 'de' ? 'Endgültige Löschung in: ' : 'Final purge in: '}${purgeText}</strong></span>
-              <span class="vault-meta-item">🛑 <strong>${currentLang === 'de' ? 'Weitergabe deaktiviert' : 'Handover disabled'}</strong></span>
+              <span class="vault-meta-item">🛑 <strong>${currentLang === 'de' ? 'Notfallweitergabe deaktiviert' : 'Handover disabled'}</strong></span>
             `;
           } else {
             // Normal mode: Active vault on logged-in account
