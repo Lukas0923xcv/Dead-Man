@@ -105,6 +105,7 @@ chmod 777 data/vault || true
 
 # 6. Build and launch container
 echo -e "${BLUE}[*] Building and starting SecureVault container...${NC}"
+$SUDO docker rm -f secure-vault-server 2>/dev/null || true
 $SUDO $COMPOSE_CMD up -d --build
 
 # 7. Print success summary
