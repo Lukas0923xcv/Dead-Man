@@ -2460,8 +2460,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       errBox.style.display = 'none';
       resBox.style.display = 'none';
 
-      if (!code) {
-        errBox.textContent = I18N[currentLang].err_code_req;
+      if (!code || !key_a) {
+        errBox.textContent = I18N[currentLang].err_code_key_req;
         errBox.style.display = 'block';
         return;
       }
@@ -2514,8 +2514,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       errBox.style.display = 'none';
       resBox.style.display = 'none';
 
-      if (!code) {
-        errBox.textContent = I18N[currentLang].err_code_req;
+      if (!code || !key_a) {
+        errBox.textContent = I18N[currentLang].err_code_key_req;
         errBox.style.display = 'block';
         return;
       }
@@ -3004,14 +3004,14 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))
             return
 
-        # Route: Disable / Stop Auto-Inheritance Permanently
-        if path in ("/api/disable-inheritance", "/api/stop-inheritance"):
+        # Route: Disable / Stop Auto-Inheritance for a specific code
+        if path == "/api/disable-inheritance":
             code = data.get("code")
             key_a = data.get("key_a") or data.get("key")
             current_user = get_authenticated_user(self)
 
-            if not code:
-                self.send_error_response(HTTPStatus.BAD_REQUEST, "Missing 'code' field in JSON payload.")
+            if not code or not key_a:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Both 'code' and 'key_a' are required to stop auto-inheritance.")
                 return
 
             clean_code = str(code).strip()
@@ -3026,25 +3026,25 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 self.send_error_response(HTTPStatus.BAD_REQUEST, f"Record '{clean_code}' has already been transferred to Inherited Mode.")
                 return
 
-            server_key_b = record.get("server_key_b")
             owner = record.get("owner_username")
-            is_owner = bool(current_user and owner and current_user.lower() == owner.lower())
+            if owner and current_user and current_user.lower() != owner.lower():
+                self.send_error_response(HTTPStatus.FORBIDDEN, "You are not authorized to modify this vault.")
+                return
 
-            # Validate authorization: Account ownership OR valid Key A
-            if is_owner:
-                pass
-            elif key_a and server_key_b:
-                try:
-                    decrypt_split(
-                        record["encrypted_text"],
-                        str(key_a).strip(),
-                        server_key_b.strip(),
-                    )
-                except Exception:
-                    self.send_error_response(HTTPStatus.UNAUTHORIZED, "Invalid Key A for this storage code.")
-                    return
-            else:
-                self.send_error_response(HTTPStatus.UNAUTHORIZED, "Key A or account authentication is required to stop auto-inheritance.")
+            server_key_b = record.get("server_key_b")
+            if not server_key_b:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Vault has no valid server key.")
+                return
+
+            # Cryptographically verify Key A
+            try:
+                decrypt_split(
+                    record["encrypted_text"],
+                    str(key_a).strip(),
+                    server_key_b.strip(),
+                )
+            except Exception:
+                self.send_error_response(HTTPStatus.UNAUTHORIZED, "Invalid Key A for this storage code.")
                 return
 
             storage.disable_auto_inheritance(clean_code, storage_dir)
@@ -3063,8 +3063,8 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             key_a = data.get("key_a") or data.get("key")
             current_user = get_authenticated_user(self)
 
-            if not code:
-                self.send_error_response(HTTPStatus.BAD_REQUEST, "Missing 'code' field in JSON payload.")
+            if not code or not key_a:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Both 'code' and 'key_a' are required for manual handover.")
                 return
 
             clean_code = str(code).strip()
@@ -3076,18 +3076,21 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 return
 
             owner = record.get("owner_username")
-            is_owner = bool(current_user and owner and current_user.lower() == owner.lower())
-            server_key_b = record.get("server_key_b")
+            if owner and current_user and current_user.lower() != owner.lower():
+                self.send_error_response(HTTPStatus.FORBIDDEN, "You are not authorized to trigger handover for this vault.")
+                return
 
-            if not is_owner:
-                if not key_a or not server_key_b:
-                    self.send_error_response(HTTPStatus.UNAUTHORIZED, "Key A or account authentication is required for handover.")
-                    return
-                try:
-                    decrypt_split(record["encrypted_text"], str(key_a).strip(), server_key_b.strip())
-                except Exception:
-                    self.send_error_response(HTTPStatus.UNAUTHORIZED, "Invalid Key A for this storage code.")
-                    return
+            server_key_b = record.get("server_key_b")
+            if not server_key_b:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Vault has already been transferred or has no server key.")
+                return
+
+            # Cryptographically verify Key A
+            try:
+                decrypt_split(record["encrypted_text"], str(key_a).strip(), server_key_b.strip())
+            except Exception:
+                self.send_error_response(HTTPStatus.UNAUTHORIZED, "Invalid Key A for this storage code.")
+                return
 
             try:
                 key_b, encrypted_text, recipient_email = storage.switch_to_inherited_mode(clean_code, storage_dir)

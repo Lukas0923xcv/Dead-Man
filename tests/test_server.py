@@ -305,6 +305,53 @@ class TestServerIntegration(unittest.TestCase):
         self.assertFalse(rec["auto_inherit"])
         self.assertEqual(rec["inactivity_days"], 0)
 
+    def test_inherit_and_disable_require_valid_key_a(self):
+        """Test that /api/inherit and /api/disable-inheritance strictly require valid Key A."""
+        headers = {"Content-Type": "application/json", **self.auth_headers}
+        payload = json.dumps({
+            "text": "Strict Key A test secret",
+            "recipient_email": "heir.strict@example.com",
+        }).encode("utf-8")
+        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers=headers, method="POST")
+        with urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            code = data["code"]
+            key_a = data["key_a"]
+
+        # 1. /api/inherit without key_a -> 400 Bad Request
+        no_key_payload = json.dumps({"code": code}).encode("utf-8")
+        no_key_req = Request(f"{self.base_url}/api/inherit", data=no_key_payload, headers=headers, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(no_key_req)
+        self.assertEqual(ctx.exception.code, 400)
+
+        # 2. /api/inherit with invalid key_a -> 401 Unauthorized
+        bad_key_payload = json.dumps({"code": code, "key_a": "invalid_key_a_12345"}).encode("utf-8")
+        bad_key_req = Request(f"{self.base_url}/api/inherit", data=bad_key_payload, headers=headers, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(bad_key_req)
+        self.assertEqual(ctx.exception.code, 401)
+
+        # 3. /api/disable-inheritance without key_a -> 400 Bad Request
+        no_key_stop = json.dumps({"code": code}).encode("utf-8")
+        no_key_stop_req = Request(f"{self.base_url}/api/disable-inheritance", data=no_key_stop, headers=headers, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(no_key_stop_req)
+        self.assertEqual(ctx.exception.code, 400)
+
+        # 4. /api/disable-inheritance with invalid key_a -> 401 Unauthorized
+        bad_key_stop = json.dumps({"code": code, "key_a": "invalid_key_a_12345"}).encode("utf-8")
+        bad_key_stop_req = Request(f"{self.base_url}/api/disable-inheritance", data=bad_key_stop, headers=headers, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(bad_key_stop_req)
+        self.assertEqual(ctx.exception.code, 401)
+
+        # 5. /api/inherit with valid key_a -> 200 OK
+        valid_inherit_payload = json.dumps({"code": code, "key_a": key_a}).encode("utf-8")
+        valid_inherit_req = Request(f"{self.base_url}/api/inherit", data=valid_inherit_payload, headers=headers, method="POST")
+        with urlopen(valid_inherit_req) as resp:
+            self.assertEqual(resp.status, 200)
+
     def test_purge_expired_inherited_records(self):
         """Test that inherited records older than 30 days are permanently deleted from disk."""
         code = "PURGE001"
