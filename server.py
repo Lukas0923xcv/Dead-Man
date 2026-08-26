@@ -1377,7 +1377,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <button class="tab-btn active" id="tab-btn-encrypt" onclick="switchTab('encrypt')" data-i18n="tab_encrypt">Verschlüsseln</button>
         <button class="tab-btn" id="tab-btn-decrypt" onclick="switchTab('decrypt')" data-i18n="tab_decrypt">Entschlüsseln</button>
         <button class="tab-btn" id="tab-btn-inherit" onclick="switchTab('inherit')" data-i18n="tab_inherit">Vererbung</button>
-        <button class="tab-btn" id="tab-btn-vaults" onclick="switchTab('vaults')" style="display: none;" data-i18n="nav_vaults">Meine Tresore</button>
+        <button class="tab-btn" id="tab-btn-vaults" onclick="switchTab('vaults')" style="display: none;"><span data-i18n="nav_vaults">Meine Tresore</span> <span class="vault-count-badge" id="vault-count" style="display: none;">0</span></button>
       </nav>
 
       <!-- 1. ENCRYPT PANEL -->
@@ -2050,7 +2050,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (!res.ok) throw new Error(data.error || 'Failed to load vaults');
 
         const vaults = data.vaults || [];
-        document.getElementById('vault-count').textContent = vaults.length;
+        const countBadge = document.getElementById('vault-count');
+        if (countBadge) {
+          countBadge.textContent = vaults.length;
+          countBadge.style.display = vaults.length > 0 ? 'inline-block' : 'none';
+        }
 
         if (vaults.length === 0) {
           emptyBox.style.display = 'block';
