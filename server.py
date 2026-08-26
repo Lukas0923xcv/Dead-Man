@@ -381,23 +381,24 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(4px);
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 999;
+      z-index: 1000;
       padding: 16px;
       animation: fadeIn 0.15s ease-out;
     }
     .modal-container {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      box-shadow: var(--card-shadow);
+      border-radius: 16px;
+      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--border);
       width: 100%;
       max-width: 780px;
-      max-height: 88vh;
+      max-height: 90vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -406,37 +407,39 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px;
+      padding: 18px 24px;
       border-bottom: 1px solid var(--border);
       background: var(--card-subtle);
     }
     .modal-title {
-      font-size: 15px;
+      font-size: 15.5px;
       font-weight: 700;
       color: var(--text-bright);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      letter-spacing: -0.01em;
     }
     .modal-close-btn {
+      width: 28px;
+      height: 28px;
       background: transparent;
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 18px;
-      padding: 4px 8px;
+      font-size: 16px;
       border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      line-height: 1;
+      transition: all 0.15s ease;
     }
     .modal-close-btn:hover {
       background: var(--border);
       color: var(--text-bright);
     }
     .modal-body {
-      padding: 20px;
+      padding: 24px;
       overflow-y: auto;
     }
 
@@ -612,14 +615,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     /* Form Fields */
     .form-group {
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     label {
       display: block;
-      font-size: 12.5px;
-      font-weight: 500;
+      font-size: 13px;
+      font-weight: 600;
       color: var(--text-bright);
-      margin-bottom: 5px;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
     }
     .hint {
       font-size: 11.5px;
@@ -627,25 +631,41 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       color: var(--text-muted);
       margin-left: 4px;
     }
-    textarea, input[type="text"], input[type="email"] {
+    textarea,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input {
       width: 100%;
+      height: 42px;
       background: var(--input-bg);
-      border: 1px solid var(--border);
-      border-radius: 7px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
       color: var(--text-bright);
       font-family: inherit;
       font-size: 13.5px;
-      padding: 9px 11px;
-      transition: border-color 0.15s ease;
-    }
-    textarea:focus, input:focus {
-      outline: none;
-      border-color: var(--border-focus);
+      padding: 0 12px;
+      box-sizing: border-box;
+      transition: all 0.15s ease;
     }
     textarea {
-      min-height: 90px;
+      height: auto;
+      min-height: 92px;
+      padding: 10px 12px;
       resize: vertical;
       line-height: 1.45;
+    }
+    textarea:focus,
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
+      background: var(--card-bg);
+    }
+    textarea::placeholder,
+    input::placeholder {
+      color: var(--text-muted);
+      opacity: 0.8;
     }
 
     /* File Attachment Dropzone / Picker */
@@ -918,10 +938,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
       background: var(--card-subtle);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 3px;
-      margin-bottom: 16px;
-      gap: 3px;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+      gap: 4px;
     }
     .auth-tab-btn {
       flex: 1;
@@ -929,26 +949,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border: none;
       color: var(--text-muted);
       font-family: inherit;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
-      padding: 6px 10px;
-      border-radius: 5px;
+      padding: 8px 12px;
+      border-radius: 7px;
       cursor: pointer;
       transition: all 0.15s ease;
+    }
+    .auth-tab-btn:hover {
+      color: var(--text-bright);
     }
     .auth-tab-btn.active {
       background: var(--card-bg);
       color: var(--text-bright);
-      box-shadow: var(--shadow);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     .auth-switch-link {
       display: block;
       text-align: center;
-      font-size: 12px;
+      font-size: 13px;
+      font-weight: 500;
       color: var(--accent);
-      margin-top: 14px;
+      margin-top: 16px;
       cursor: pointer;
       text-decoration: none;
+      transition: color 0.15s ease;
     }
     .auth-switch-link:hover {
       text-decoration: underline;
@@ -1295,13 +1320,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
          AUTHENTICATION MODAL (LOGIN & REGISTER)
          ===================================================================== -->
     <div id="auth-modal" class="modal-overlay" onclick="closeAuthModalOnBackdrop(event)">
-      <div class="modal-container" style="max-width: 420px;">
+      <div class="modal-container" style="max-width: 410px;">
         <div class="modal-header">
           <div class="modal-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(99, 102, 241, 0.12); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
             <span id="auth-modal-title" data-i18n="auth_modal_title_login">Bei SecureVault anmelden</span>
           </div>
           <button class="modal-close-btn" onclick="closeAuthModal()" title="Schliessen">✕</button>
