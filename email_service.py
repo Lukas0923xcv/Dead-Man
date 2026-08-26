@@ -64,32 +64,31 @@ def send_key_b_email(
     # Plain text version
     text_content = f"""Hello,
 
-Custody for encrypted record '{code}' has been transferred to Inherited Mode.
+Cryptographic custody for encrypted record '{code}' has been released to you.
 
-Below is your Key B:
+Your Key B (Released Share):
 --------------------------------------------------
 Storage Code : {code}
 Key B        : {key_b}
 --------------------------------------------------
 
-To decrypt the original data, visit:
-{server_url}
+To decrypt and retrieve the stored data:
+1. Visit {server_url}
+2. Open the 'Decrypt' section
+3. Enter the Storage Code: {code}
+4. Provide Key A (entrusted to you by the owner) and Key B (provided above)
 
-Navigate to the 'Decrypt' tab and provide:
-1. Storage Code: {code}
-2. Key A (Provided by the owner)
-3. Key B (Provided above)
-
-Both Key A and Key B are required to decrypt.
+Both Key A and Key B are strictly required for Zero-Knowledge decryption.
 
 --------------------------------------------------
-⚠️ IMPORTANT RETENTION NOTICE:
-SecureVault is a cryptographic Dead Man's Switch service, NOT a permanent cloud host.
-All data for this record will be PERMANENTLY DELETED 30 days after this notification.
-Please decrypt and download your data promptly.
+⚠️ IMPORTANT DATA RETENTION NOTICE:
+SecureVault is engineered for automated emergency handover.
+For data sovereignty and security, this encrypted record will be
+PERMANENTLY DELETED 30 days after this notification.
+Please decrypt and save your data promptly.
 --------------------------------------------------
 
-SecureVault Team
+SecureVault Custody Service
 """
 
     # HTML version
@@ -108,20 +107,20 @@ SecureVault Team
 </head>
 <body>
   <div class="box">
-    <h2>🏛️ SecureVault — Inherited Custody Handover</h2>
-    <p>Custody for encrypted record has been transferred to <strong>Inherited Mode</strong>.</p>
+    <h2>🏛️ SecureVault — Emergency Custody Handover</h2>
+    <p>Cryptographic custody for an encrypted record has been transferred to you in <strong>Inherited Mode</strong>.</p>
     
     <p><strong>Storage Code:</strong></p>
     <div class="code-box">{code}</div>
 
-    <p style="margin-top: 16px;"><strong>Key B (Released Key):</strong></p>
+    <p style="margin-top: 16px;"><strong>Key B (Released Key Share):</strong></p>
     <div class="key-box">{key_b}</div>
 
-    <p style="margin-top: 16px;">To decrypt this record, visit <a href="{server_url}" style="color: #58a6ff;">{server_url}</a> and enter both <strong>Key A</strong> and <strong>Key B</strong>.</p>
+    <p style="margin-top: 16px;">To decrypt this record, visit <a href="{server_url}" style="color: #58a6ff;">{server_url}</a>, open <em>Decrypt</em>, and provide both <strong>Key A</strong> and <strong>Key B</strong>.</p>
 
     <div class="warning-box">
-      <strong>⚠️ 30-Day Data Deletion Notice:</strong><br>
-      SecureVault is a cryptographic Dead Man's Switch service, <em>not a permanent cloud storage host</em>. All data for this record will be <strong>permanently deleted 30 days after inheritance</strong>. Please decrypt and save your data promptly.
+      <strong>⚠️ 30-Day Data Retention Policy:</strong><br>
+      SecureVault is engineered for automated emergency handover. To safeguard privacy, this encrypted record will be <strong>permanently deleted 30 days after this notice</strong>. Please retrieve and save your files promptly.
     </div>
 
     <div class="footer">SecureVault • Dual-Key Split Dead Man's Switch • Switzerland</div>

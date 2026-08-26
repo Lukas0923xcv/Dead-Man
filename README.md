@@ -76,13 +76,13 @@ To enable HTTPS transport security:
 
 ---
 
-## ⚰️ Dead Man's Switch & 30-Day Data Retention Policy
+## 🏛️ Dead Man's Switch & Data Sovereignty Policy
 
-SecureVault is an operational **Dead Man's Switch service, NOT a permanent cloud storage host**:
-- **Normal Mode**: Active as long as you visit or interact with the system within your inactivity window (default 30 days).
-- **Inherited Mode**: Triggered after 30 days of inactivity (or manual handover). Key B is emailed to your heir and wiped from the server.
-- **30-Day Auto-Purge**: The heir has **30 days** to retrieve and download the data. After 30 days in Inherited Mode, **all encrypted data is permanently deleted from disk**.
-- **Recommendation**: Always create a fresh encryption if you wish to maintain continuous custody for retrieved files or notes.
+SecureVault is engineered specifically for **automated cryptographic handover and emergency succession**:
+- **Normal Mode**: Active as long as owner activity is registered within the 30-day inactivity window.
+- **Inherited Mode**: Triggered after 30 days of inactivity (or via immediate manual handover). Key B is automatically dispatched to the recipient and wiped from server memory.
+- **30-Day Retrieval Window & Auto-Purge**: Following key release, the recipient has **30 days** to retrieve and decrypt the files. Once this window elapses, **all encrypted records are permanently purged from disk** to guarantee absolute data sovereignty.
+- **Ongoing Protection**: To maintain continuous emergency custody for retrieved notes or files, simply create a fresh encryption.
 
 ---
 
