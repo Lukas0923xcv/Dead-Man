@@ -229,6 +229,68 @@ class TestServerIntegration(unittest.TestCase):
         self.assertIsNone(updated_rec["device_id"])
         self.assertIsNotNone(updated_rec["inherited_at"])
 
+    def test_encrypt_with_disabled_auto_inheritance(self):
+        """Test encrypting with auto_inherit=False avoids auto-expiry."""
+        payload = json.dumps({
+            "text": "Permanent Secret Without Auto Expiry",
+            "auto_inherit": False,
+            "device_id": "dev_perm_user"
+        }).encode("utf-8")
+
+        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(req) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            code = data["code"]
+            self.assertFalse(data["auto_inherit"])
+            self.assertEqual(data["inactivity_days"], 0)
+
+        # Backdate the record by 100 days
+        file_path = storage.get_file_path(code, self.test_storage_dir)
+        with open(file_path, "r", encoding="utf-8") as f:
+            record_data = json.load(f)
+        past_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=100)
+        record_data["last_active_at"] = past_date.isoformat()
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(record_data, f)
+
+        # Verify scanner does NOT pick up this record
+        expired = storage.get_inactive_expired_records(inactivity_days=30, storage_dir=self.test_storage_dir)
+        self.assertNotIn(code, expired)
+
+    def test_disable_auto_inheritance_api(self):
+        """Test stopping auto-inheritance for an existing record via API."""
+        # 1. Create standard record
+        payload = json.dumps({
+            "text": "Standard secret",
+            "recipient_email": "heir@example.com",
+            "device_id": "dev_stop_test"
+        }).encode("utf-8")
+        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            code = data["code"]
+            key_a = data["key_a"]
+
+        # 2. Call /api/disable-inheritance with code and key_a
+        stop_payload = json.dumps({
+            "code": code,
+            "key_a": key_a,
+            "device_id": "dev_stop_test"
+        }).encode("utf-8")
+        stop_req = Request(f"{self.base_url}/api/disable-inheritance", data=stop_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(stop_req) as resp:
+            self.assertEqual(resp.status, 200)
+            res_data = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(res_data["status"], "success")
+            self.assertFalse(res_data["auto_inherit"])
+
+        # 3. Verify on disk
+        rec = storage.load_vault_record(code, self.test_storage_dir)
+        self.assertFalse(rec["auto_inherit"])
+        self.assertEqual(rec["inactivity_days"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
+

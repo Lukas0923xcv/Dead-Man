@@ -54,6 +54,7 @@ def save_vault_record(
     device_id: Optional[str] = None,
     mode: str = "normal",
     inactivity_days: int = 30,
+    auto_inherit: bool = True,
     storage_dir: str = DEFAULT_STORAGE_DIR,
 ) -> str:
     """
@@ -64,14 +65,18 @@ def save_vault_record(
     file_path = get_file_path(code, storage_dir)
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
+    is_auto = bool(auto_inherit and int(inactivity_days) > 0)
+    final_days = int(inactivity_days) if is_auto else 0
+
     record = {
         "code": code,
         "mode": mode,
+        "auto_inherit": is_auto,
         "encrypted_text": encrypted_text.strip(),
         "server_key_b": server_key_b,
         "device_id": device_id.strip() if device_id else None,
         "recipient_email": recipient_email.strip() if recipient_email else None,
-        "inactivity_days": int(inactivity_days),
+        "inactivity_days": final_days,
         "created_at": now_iso,
         "last_active_at": now_iso,
         "inherited_at": None,
@@ -149,6 +154,7 @@ def get_inactive_expired_records(
     """
     Scan all vault records and return codes of records that have exceeded the inactivity limit in Normal Mode.
     Uses each record's specific inactivity window (with fallback to server default).
+    Ignores records where auto_inherit is explicitly disabled.
     """
     ensure_storage_dir(storage_dir)
     expired_codes = []
@@ -165,12 +171,17 @@ def get_inactive_expired_records(
             if record.get("mode") != "normal" or not record.get("server_key_b"):
                 continue
 
+            if record.get("auto_inherit") is False:
+                continue
+
+            rec_inactivity = int(record.get("inactivity_days") or inactivity_days)
+            if rec_inactivity <= 0:
+                continue
+
             last_active_str = record.get("last_active_at") or record.get("created_at")
             if not last_active_str:
                 continue
 
-            # Per-record inactivity window
-            rec_inactivity = int(record.get("inactivity_days") or inactivity_days)
             cutoff_delta = datetime.timedelta(days=rec_inactivity)
 
             # Parse ISO timestamp (handling 'Z' or '+00:00')
@@ -185,6 +196,26 @@ def get_inactive_expired_records(
             continue
 
     return expired_codes
+
+
+def disable_auto_inheritance(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> Dict:
+    """
+    Permanently disable automated inheritance for a record (stops the Dead Man's Switch).
+    """
+    record = load_vault_record(code, storage_dir)
+    if record is None:
+        raise ValueError(f"No record found for code '{code}'.")
+    if record.get("mode") == "inherited":
+        raise ValueError(f"Record '{code}' has already been transferred to Inherited Mode.")
+
+    record["auto_inherit"] = False
+    record["inactivity_days"] = 0
+
+    file_path = get_file_path(code, storage_dir)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(record, f, indent=2)
+
+    return record
 
 
 def switch_to_inherited_mode(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> Tuple[str, str, Optional[str]]:
@@ -264,15 +295,21 @@ def get_all_vault_statuses(
             last_active_str = record.get("last_active_at") or created_at
             inherited_at = record.get("inherited_at")
             has_recipient = bool(record.get("recipient_email"))
-            rec_inactivity_days = int(record.get("inactivity_days") or inactivity_days)
-            inactivity_delta = datetime.timedelta(days=rec_inactivity_days)
+            auto_inherit = record.get("auto_inherit", True)
+            rec_inactivity_days = int(record.get("inactivity_days") if "inactivity_days" in record else inactivity_days)
 
             seconds_remaining = 0
             time_left_formatted = "N/A"
             deadline_iso = None
 
             if mode == "normal":
-                if last_active_str:
+                if not auto_inherit or rec_inactivity_days <= 0:
+                    time_left_formatted = "♾️ Deaktiviert (Nie)"
+                    inactivity_formatted = "Deaktiviert (Nie)"
+                    seconds_remaining = 9999999999
+                elif last_active_str:
+                    inactivity_delta = datetime.timedelta(days=rec_inactivity_days)
+                    inactivity_formatted = f"{rec_inactivity_days}d" if rec_inactivity_days == 1 else f"{rec_inactivity_days} Days"
                     clean_ts = last_active_str.replace("Z", "+00:00")
                     last_active = datetime.datetime.fromisoformat(clean_ts)
                     if last_active.tzinfo is None:
@@ -286,15 +323,18 @@ def get_all_vault_statuses(
                     else:
                         time_left_formatted = "Expired (Pending Trigger)"
                 else:
+                    inactivity_formatted = f"{rec_inactivity_days} Days"
                     time_left_formatted = "Unknown"
             else:
+                inactivity_formatted = "N/A"
                 time_left_formatted = "Triggered (Inherited)"
 
             statuses.append({
                 "code": code,
                 "mode": mode,
+                "auto_inherit": auto_inherit and rec_inactivity_days > 0,
                 "inactivity_days": rec_inactivity_days,
-                "inactivity_formatted": f"{rec_inactivity_days}d" if rec_inactivity_days == 1 else f"{rec_inactivity_days} Days",
+                "inactivity_formatted": inactivity_formatted,
                 "created_at": created_at,
                 "last_active_at": last_active_str,
                 "inherited_at": inherited_at,
@@ -306,10 +346,10 @@ def get_all_vault_statuses(
         except Exception:
             continue
 
-    # Sort: Normal mode records with closest deadlines first, then Inherited records
+    # Sort: Normal mode records with closest deadlines first, then infinite/disabled, then Inherited records
     statuses.sort(
         key=lambda x: (
-            0 if x["mode"] == "normal" else 1,
+            0 if x["mode"] == "normal" and x.get("auto_inherit") else (1 if x["mode"] == "normal" else 2),
             x["seconds_remaining"] if x["mode"] == "normal" else 0,
             x["code"]
         )

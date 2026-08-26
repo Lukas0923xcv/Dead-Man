@@ -547,7 +547,9 @@ MONITOR_HTML = """<!DOCTYPE html>
         let isUrgent = false;
 
         if (isNormal) {
-          if (r.deadline_at) {
+          if (r.auto_inherit === false || r.inactivity_days === 0) {
+            countdownStr = '♾️ Disabled (Never)';
+          } else if (r.deadline_at) {
             const deadlineMs = new Date(r.deadline_at).getTime();
             const diffSec = (deadlineMs - now) / 1000;
             countdownStr = formatTimeRemaining(diffSec);
@@ -572,7 +574,11 @@ MONITOR_HTML = """<!DOCTYPE html>
           dateDisplay = new Date(r.created_at).toLocaleString();
         }
 
-        const inactivityDaysText = r.inactivity_days ? (r.inactivity_days + ' Days') : '30 Days';
+        const isDisabled = isNormal && (r.auto_inherit === false || r.inactivity_days === 0);
+        const inactivityDaysText = isDisabled ? '♾️ Disabled' : (r.inactivity_days ? (r.inactivity_days + ' Days') : '30 Days');
+        const subtext = isNormal
+          ? (isDisabled ? 'Auto-inheritance stopped' : (r.deadline_at ? 'Trigger Deadline: ' + new Date(r.deadline_at).toLocaleDateString() : ''))
+          : (r.inherited_at ? 'Triggered at: ' + new Date(r.inherited_at).toLocaleDateString() : 'Key B Dispatched');
 
         html += `
           <tr>
@@ -584,11 +590,11 @@ MONITOR_HTML = """<!DOCTYPE html>
             </td>
             <td>${modeBadge}</td>
             <td>
-              <span class="inactivity-badge">⏱ ${inactivityDaysText}</span>
+              <span class="inactivity-badge" style="${isDisabled ? 'color: var(--text-muted); border-color: var(--border);' : ''}">⏱ ${inactivityDaysText}</span>
             </td>
             <td>
-              <div class="countdown ${countdownClass}">${countdownStr}</div>
-              <div class="time-subtext">${isNormal ? (r.deadline_at ? 'Trigger Deadline: ' + new Date(r.deadline_at).toLocaleDateString() : '') : (r.inherited_at ? 'Triggered at: ' + new Date(r.inherited_at).toLocaleDateString() : 'Key B Dispatched')}</div>
+              <div class="countdown ${countdownClass}" style="${isDisabled ? 'color: var(--text-muted);' : ''}">${countdownStr}</div>
+              <div class="time-subtext">${subtext}</div>
             </td>
             <td class="hide-mobile">
               <span style="color: var(--text-muted); font-size: 12px;">${dateDisplay}</span>

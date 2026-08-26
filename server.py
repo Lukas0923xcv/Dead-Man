@@ -1099,13 +1099,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <div class="form-group">
+          <label for="enc-auto-inherit">
+            <span data-i18n="enc_label_auto_inherit">Automatischer Nachlass (Dead Man's Switch)</span>
+          </label>
+          <select id="enc-auto-inherit" onchange="toggleAutoInheritOption()" style="width: 100%; padding: 9px 12px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text-bright); font-family: inherit; font-size: 13.5px;">
+            <option value="enabled" data-i18n="opt_inherit_30d">Aktiviert (30 Tage Inaktivität — Empfänger-E-Mail Pflicht)</option>
+            <option value="disabled" data-i18n="opt_inherit_never">Deaktiviert / Nie (Keine automatische Vererbung, kein Timer)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="recipient-email-group">
           <label for="recipient-email">
-            <span data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</span> <span style="color: var(--danger, #f85149); font-weight: 700;">*</span>
+            <span id="enc-email-label-text" data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</span> <span id="enc-email-asterisk" style="color: var(--danger, #f85149); font-weight: 700;">*</span>
           </label>
           <input type="email" id="recipient-email" placeholder="recipient@example.com" required>
-          <div style="margin-top: 6px; font-size: 12px; line-height: 1.45; color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 6px;">
+          <div id="enc-email-warning-box" style="margin-top: 6px; font-size: 12px; line-height: 1.45; color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 6px;">
             <span style="font-size: 14px; line-height: 1;">⚠️</span>
-            <span data-i18n="enc_email_warning"><strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses (Inheritance / 30 Tage Inaktivität) unwiderruflich verloren!</span>
+            <span id="enc-email-warning-text" data-i18n="enc_email_warning"><strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses (Inheritance / 30 Tage Inaktivität) unwiderruflich verloren!</span>
           </div>
         </div>
 
@@ -1215,7 +1225,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <input type="text" id="inh-code" data-i18n-placeholder="dec_ph_code" placeholder="16-stelliger Code" maxlength="32">
         </div>
 
-        <button class="btn-main" onclick="handleInherit()" data-i18n="btn_inherit">Nachlassübergabe jetzt ausführen</button>
+        <div class="form-group">
+          <label for="inh-key-a" data-i18n="label_inh_key_a">Schlüssel A (zur Autorisierung)</label>
+          <input type="text" id="inh-key-a" data-i18n-placeholder="dec_ph_key_a" placeholder="Schlüssel A einfügen...">
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px;">
+          <button class="btn-main" style="flex: 1; min-width: 200px;" onclick="handleInherit()" data-i18n="btn_inherit">🚀 Nachlass jetzt ausführen</button>
+          <button class="btn-main" style="flex: 1; min-width: 200px; background: #6e7681; border: 1px solid var(--border);" onclick="handleStopInheritance()" data-i18n="btn_stop_inherit">🛑 Nachlass dauerhaft stoppen</button>
+        </div>
 
         <div id="inh-error" class="alert alert-error" style="margin-top: 14px;"></div>
 
@@ -1308,8 +1326,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_hint_file: "(Optional — vollständig durch Schlüssel verschlüsselt)",
         dropzone_text: "Klicken zum Auswählen oder Datei hierher ziehen",
         dropzone_hint: "Dokumente, PDFs, Bilder, Archive — jedes Dateiformat",
+        enc_label_auto_inherit: "Automatischer Nachlass (Dead Man's Switch)",
+        opt_inherit_30d: "Aktiviert (30 Tage Inaktivität — Empfänger-E-Mail Pflicht)",
+        opt_inherit_never: "Deaktiviert / Nie (Keine automatische Vererbung, kein Timer)",
         enc_label_email: "Empfänger-E-Mail (Pflichtfeld)",
+        enc_label_email_optional: "Empfänger-E-Mail (Optional)",
         enc_email_warning: "<strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses (Inheritance / 30 Tage Inaktivität) unwiderruflich verloren!",
+        enc_email_disabled_note: "ℹ️ <strong>Hinweis:</strong> Automatischer Nachlass ist deaktiviert. Schlüssel B wird niemals automatisch übertragen.",
         btn_encrypt_save: "Verschlüsseln & Speichern",
         enc_success: "Erfolgreich gespeichert. Auf diesem Gerät benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.",
         label_storage_code: "Speichercode",
@@ -1329,10 +1352,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         label_dec_text: "Entschlüsselter Text",
         
         inh_title: "Nachlass übergeben (Vererbung)",
-        inh_subtitle: "Gibt Schlüssel B an den Empfänger frei und löscht ihn vom Server.",
-        inh_warning: "<strong>Automatischer & Manueller Schutz:</strong> Wenn Sie die Seite 30 Tage lang nicht besuchen, wird Schlüssel B automatisch an den Empfänger gesendet. Sie können die Übergabe hier auch jederzeit sofort manuell ausführen.",
-        btn_inherit: "Nachlassübergabe jetzt ausführen",
+        inh_subtitle: "Gibt Schlüssel B an den Empfänger frei oder deaktiviert den automatischen Nachlass dauerhaft.",
+        inh_warning: "<strong>Automatischer & Manueller Schutz:</strong> Wenn Sie die Seite 30 Tage lang nicht besuchen, wird Schlüssel B automatisch an den Empfänger gesendet. Sie können die Übergabe hier jederzeit sofort manuell ausführen oder die automatische Vererbung dauerhaft stoppen.",
+        label_inh_key_a: "Schlüssel A (zur Autorisierung)",
+        btn_inherit: "🚀 Nachlass jetzt ausführen",
+        btn_stop_inherit: "🛑 Nachlass dauerhaft stoppen",
         inh_success: "<strong>Nachlass übergeben:</strong> Schlüssel B wurde unwiderruflich aus dem Serverspeicher gelöscht.",
+        inh_stopped_success: "<strong>Nachlass dauerhaft gestoppt:</strong> Der automatische Dead Man's Switch wurde für diesen Code deaktiviert. Schlüssel B wird niemals automatisch übertragen.",
         label_released_key_b: "Freigegebener Schlüssel B",
         
         btn_copy: "Kopieren",
@@ -1408,8 +1434,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_hint_file: "(Optional — fully encrypted by the keys)",
         dropzone_text: "Click to choose a file or drag & drop",
         dropzone_hint: "Documents, PDFs, Images, Archives, Any file type",
+        enc_label_auto_inherit: "Automatic Inheritance (Dead Man's Switch)",
+        opt_inherit_30d: "Enabled (30 Days Inactivity — Recipient Email Required)",
+        opt_inherit_never: "Disabled / Never (No auto-inheritance, timer stopped)",
         enc_label_email: "Recipient Email (Required)",
+        enc_label_email_optional: "Recipient Email (Optional)",
         enc_email_warning: "<strong>Important:</strong> If no valid email address is provided, your data and Key B will be permanently lost upon activation of inheritance (30 days of inactivity)!",
+        enc_email_disabled_note: "ℹ️ <strong>Note:</strong> Automatic inheritance is disabled. Key B will never be automatically transferred.",
         btn_encrypt_save: "Encrypt & Save",
         enc_success: "Saved successfully. On this device, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
         label_storage_code: "Storage Code",
@@ -1429,10 +1460,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         label_dec_text: "Decrypted Text",
         
         inh_title: "Transfer Custody (Inheritance)",
-        inh_subtitle: "Releases Key B to the recipient and removes it from the server.",
-        inh_warning: "<strong>Automated & Manual Protection:</strong> If you do not visit the site for 30 days, Key B will be automatically sent to the recipient. You can also trigger the transfer manually anytime.",
-        btn_inherit: "Transfer Custody Now",
+        inh_subtitle: "Releases Key B to the recipient or permanently stops automated inheritance.",
+        inh_warning: "<strong>Automated & Manual Protection:</strong> If you do not visit the site for 30 days, Key B will be automatically sent to the recipient. You can trigger the transfer manually anytime or permanently stop the auto-inheritance timer.",
+        label_inh_key_a: "Key A (for Authorization)",
+        btn_inherit: "🚀 Transfer Custody Now",
+        btn_stop_inherit: "🛑 Stop Auto-Inheritance Permanently",
         inh_success: "<strong>Custody Transferred:</strong> Key B has been removed from server storage.",
+        inh_stopped_success: "<strong>Auto-Inheritance Permanently Stopped:</strong> The automated Dead Man's Switch has been disabled for this code. Key B will never be automatically transferred.",
         label_released_key_b: "Released Key B",
         
         btn_copy: "Copy",
@@ -1635,8 +1669,42 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('tab-inherit').style.display = tabName === 'inherit' ? 'block' : 'none';
     }
 
+    function toggleAutoInheritOption() {
+      const mode = document.getElementById('enc-auto-inherit').value;
+      const isEnabled = mode === 'enabled';
+      const emailInput = document.getElementById('recipient-email');
+      const asterisk = document.getElementById('enc-email-asterisk');
+      const labelText = document.getElementById('enc-email-label-text');
+      const warningText = document.getElementById('enc-email-warning-text');
+      const warningBox = document.getElementById('enc-email-warning-box');
+
+      if (isEnabled) {
+        emailInput.required = true;
+        if (asterisk) asterisk.style.display = 'inline';
+        if (labelText) labelText.textContent = I18N[currentLang].enc_label_email;
+        if (warningText) warningText.innerHTML = I18N[currentLang].enc_email_warning;
+        if (warningBox) {
+          warningBox.style.color = '#f85149';
+          warningBox.style.background = 'rgba(248, 81, 73, 0.1)';
+          warningBox.style.borderColor = 'rgba(248, 81, 73, 0.25)';
+        }
+      } else {
+        emailInput.required = false;
+        if (asterisk) asterisk.style.display = 'none';
+        if (labelText) labelText.textContent = I18N[currentLang].enc_label_email_optional;
+        if (warningText) warningText.innerHTML = I18N[currentLang].enc_email_disabled_note;
+        if (warningBox) {
+          warningBox.style.color = 'var(--text-muted)';
+          warningBox.style.background = 'rgba(110, 118, 129, 0.1)';
+          warningBox.style.borderColor = 'rgba(110, 118, 129, 0.25)';
+        }
+      }
+    }
+
     async function handleEncrypt() {
       const text = document.getElementById('plaintext').value.trim();
+      const autoInheritVal = document.getElementById('enc-auto-inherit').value;
+      const auto_inherit = autoInheritVal === 'enabled';
       const recipient_email = document.getElementById('recipient-email').value.trim();
       const device_id = getOrCreateDeviceId();
       const errBox = document.getElementById('enc-error');
@@ -1650,16 +1718,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         return;
       }
 
-      if (!recipient_email || !recipient_email.includes('@') || !recipient_email.includes('.')) {
-        errBox.textContent = I18N[currentLang].err_email_req;
-        errBox.style.display = 'block';
-        document.getElementById('recipient-email').focus();
-        return;
+      if (auto_inherit) {
+        if (!recipient_email || !recipient_email.includes('@') || !recipient_email.includes('.')) {
+          errBox.textContent = I18N[currentLang].err_email_req;
+          errBox.style.display = 'block';
+          document.getElementById('recipient-email').focus();
+          return;
+        }
       }
 
       try {
-        const payload = { text, recipient_email, device_id };
+        const payload = { text, auto_inherit, device_id };
         if (selectedFileObject) payload.file = selectedFileObject;
+        if (recipient_email) payload.recipient_email = recipient_email;
+        if (!auto_inherit) payload.inactivity_days = 0;
 
         const res = await fetch('/api/encrypt', {
           method: 'POST',
@@ -1673,10 +1745,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('res-key-a').textContent = data.key_a;
 
         const emailInfo = document.getElementById('res-email-info');
-        if (recipient_email) {
+        if (auto_inherit && recipient_email) {
           const msg = currentLang === 'de'
             ? `✉️ Empfänger registriert: <strong>${recipient_email}</strong> (Schlüssel B wird bei 30 Tagen Inaktivität oder manueller Vererbung gesendet).`
             : `✉️ Recipient registered: <strong>${recipient_email}</strong> (Key B will be emailed upon 30-day inactivity or manual transfer).`;
+          emailInfo.innerHTML = msg;
+          emailInfo.style.display = 'block';
+        } else if (!auto_inherit) {
+          const msg = currentLang === 'de'
+            ? `♾️ <strong>Automatischer Nachlass deaktiviert:</strong> Dieser Tresor-Eintrag läuft niemals ab und wird niemals automatisch vererbt.`
+            : `♾️ <strong>Automatic inheritance disabled:</strong> This vault entry never expires and will never be automatically inherited.`;
           emailInfo.innerHTML = msg;
           emailInfo.style.display = 'block';
         } else {
@@ -1810,6 +1888,44 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           emailStatus.style.display = 'none';
         }
 
+        resBox.style.display = 'block';
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      }
+    }
+
+    async function handleStopInheritance() {
+      const code = document.getElementById('inh-code').value.trim();
+      const key_a = document.getElementById('inh-key-a').value.trim();
+      const device_id = getOrCreateDeviceId();
+      const errBox = document.getElementById('inh-error');
+      const resBox = document.getElementById('inh-results');
+      errBox.style.display = 'none';
+      resBox.style.display = 'none';
+
+      if (!code) {
+        errBox.textContent = I18N[currentLang].err_code_req;
+        errBox.style.display = 'block';
+        return;
+      }
+
+      try {
+        const payload = { code, key_a, device_id };
+        const res = await fetch('/api/disable-inheritance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to disable auto-inheritance.');
+
+        const emailStatus = document.getElementById('inh-email-status');
+        const keyField = document.getElementById('inh-key-field');
+        keyField.style.display = 'none';
+        emailStatus.innerHTML = `♾️ ${I18N[currentLang].inh_stopped_success}`;
+        emailStatus.style.display = 'block';
         resBox.style.display = 'block';
       } catch (err) {
         errBox.textContent = err.message;
@@ -2047,17 +2163,25 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             plaintext = data.get("text", "")
             file_obj = data.get("file")
             recipient_email = (data.get("recipient_email") or "").strip()
+            auto_inherit = bool(data.get("auto_inherit", True))
+            raw_inactivity = data.get("inactivity_days")
+            inactivity_days = int(raw_inactivity) if raw_inactivity is not None else int(self.server.inactivity_days)
+
+            if inactivity_days <= 0 or not auto_inherit:
+                auto_inherit = False
+                inactivity_days = 0
 
             if not plaintext and not file_obj:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, "Must provide 'text' or 'file' in JSON payload.")
                 return
 
-            if not recipient_email or "@" not in recipient_email or "." not in recipient_email.split("@")[-1]:
-                self.send_error_response(
-                    HTTPStatus.BAD_REQUEST,
-                    "Recipient email is required and must be a valid email address. Without a valid email, Key B is permanently lost upon activation of inheritance."
-                )
-                return
+            if auto_inherit:
+                if not recipient_email or "@" not in recipient_email or "." not in recipient_email.split("@")[-1]:
+                    self.send_error_response(
+                        HTTPStatus.BAD_REQUEST,
+                        "Recipient email is required when auto-inheritance is enabled. Without a valid email, Key B is permanently lost upon activation of inheritance."
+                    )
+                    return
 
             # Package text and file into unified payload before encryption
             package = {
@@ -2079,8 +2203,6 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     if not storage.code_exists(code, storage_dir):
                         break
 
-                inactivity_days = int(data.get("inactivity_days") or self.server.inactivity_days)
-
                 storage.save_vault_record(
                     code=code,
                     encrypted_text=encrypted_text,
@@ -2089,6 +2211,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     device_id=device_id,
                     mode="normal",
                     inactivity_days=inactivity_days,
+                    auto_inherit=auto_inherit,
                     storage_dir=storage_dir,
                 )
 
@@ -2102,6 +2225,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                         "recipient_email": recipient_email.strip() if recipient_email else None,
                         "device_bound": bool(device_id),
                         "inactivity_days": inactivity_days,
+                        "auto_inherit": auto_inherit,
                         "mode": "normal",
                         "algorithm": f"AES-256-GCM ({key_bits}-Bit Split)",
                         "message": f"Encrypted payload saved in Normal Mode under code '{code}'.",
@@ -2110,6 +2234,59 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 )
             except Exception as e:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))
+            return
+
+        # Route: Disable / Stop Auto-Inheritance Permanently
+        if path in ("/api/disable-inheritance", "/api/stop-inheritance"):
+            code = data.get("code")
+            key_a = data.get("key_a") or data.get("key")
+            device_id = data.get("device_id")
+
+            if not code:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Missing 'code' field in JSON payload.")
+                return
+
+            clean_code = str(code).strip()
+            storage_dir = self.server.storage_dir
+            record = storage.load_vault_record(clean_code, storage_dir)
+
+            if record is None:
+                self.send_error_response(HTTPStatus.NOT_FOUND, f"No record found for code '{clean_code}'.")
+                return
+
+            if record.get("mode") == "inherited":
+                self.send_error_response(HTTPStatus.BAD_REQUEST, f"Record '{clean_code}' has already been transferred to Inherited Mode.")
+                return
+
+            server_key_b = record.get("server_key_b")
+            bound_device = record.get("device_id")
+
+            # Validate authorization: Key A or original Device Binding
+            if key_a and server_key_b:
+                try:
+                    decrypt_split(
+                        record["encrypted_text"],
+                        str(key_a).strip(),
+                        server_key_b.strip(),
+                    )
+                except Exception:
+                    self.send_error_response(HTTPStatus.UNAUTHORIZED, "Invalid Key A for this storage code.")
+                    return
+            elif bound_device and device_id and bound_device == device_id:
+                pass
+            else:
+                if not key_a:
+                    self.send_error_response(HTTPStatus.UNAUTHORIZED, "Key A is required to authenticate stopping auto-inheritance.")
+                    return
+
+            storage.disable_auto_inheritance(clean_code, storage_dir)
+            self.send_json_response(HTTPStatus.OK, {
+                "status": "success",
+                "code": clean_code,
+                "auto_inherit": False,
+                "inactivity_days": 0,
+                "message": f"Auto-inheritance has been permanently stopped for record '{clean_code}'."
+            })
             return
 
         # Route: Transfer / Switch to Inherited Mode (Manual Handover)
