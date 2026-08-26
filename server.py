@@ -889,6 +889,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <button class="nav-link-btn" id="nav-btn-app" onclick="navigateTo('app', 'encrypt')" data-i18n="nav_encrypt">Verschlüsseln</button>
         <button class="nav-link-btn" onclick="navigateTo('app', 'decrypt')" data-i18n="nav_decrypt">Entschlüsseln</button>
         <button class="nav-link-btn" onclick="openInfoModal()" data-i18n="nav_info">Info</button>
+        <button class="nav-link-btn" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':8081', '_blank')" data-i18n="nav_monitor">Monitor (8081) ↗</button>
         
         <!-- Language Switcher (DE base) -->
         <div class="lang-switch">
@@ -1240,6 +1241,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     <footer>
       <span data-i18n="footer_text">SecureVault • Zero-Knowledge Kryptographische Verwahrung • Schweiz</span>
+      <div class="footer-links" style="margin-top: 8px; display: flex; gap: 14px; justify-content: center; align-items: center; font-size: 11.5px;">
+        <a href="javascript:void(0)" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':8081', '_blank')" style="color: var(--accent); text-decoration: none; font-weight: 500;" data-i18n="footer_monitor_link">⏱ Dead Man Monitor (Port 8081) ↗</a>
+        <span style="color: var(--border-subtle);">•</span>
+        <a href="https://github.com/Lukas0923xcv/Linux-test" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: none;">GitHub Repository ↗</a>
+      </div>
     </footer>
   </div>
 
@@ -1250,6 +1256,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         nav_encrypt: "Verschlüsseln",
         nav_decrypt: "Entschlüsseln",
         nav_info: "Info",
+        nav_monitor: "Monitor (8081) ↗",
+        footer_monitor_link: "⏱ Dead Man Monitor (Port 8081) ↗",
         
         hero_title: "Zero-Knowledge Digitaler Tresor & Kryptographische Verwahrung",
         hero_desc: "Vertrauliche Dateien, Zugangsdaten, Dokumente und digitale Nachlässe sicher speichern. Ende-zu-Ende verschlüsselt mit 256-Bit Split-Keys in der Schweiz unter strengsten Datenschutzrichtlinien.",
@@ -1350,6 +1358,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         nav_encrypt: "Encrypt",
         nav_decrypt: "Decrypt",
         nav_info: "Info",
+        nav_monitor: "Monitor (8081) ↗",
+        footer_monitor_link: "⏱ Dead Man Monitor (Port 8081) ↗",
         
         hero_title: "Zero-Knowledge Digital Vault & Cryptographic Custody",
         hero_desc: "Store confidential files, credentials, documents, and digital inheritances. Encrypted end-to-end with 256-bit split keys and hosted in Switzerland under strict data protection principles.",
