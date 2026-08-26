@@ -2016,6 +2016,18 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             self.send_json_response(HTTPStatus.OK, {"status": "ok", "updated_records": updated})
             return
 
+        # Route: SMTP Test Diagnostics
+        if path == "/api/test-email":
+            to_addr = data.get("to") or data.get("email")
+            success, msg = email_service.test_smtp_connection(to_addr)
+            status_code = HTTPStatus.OK if success else HTTPStatus.BAD_REQUEST
+            self.send_json_response(status_code, {
+                "success": success,
+                "message": msg,
+                "smtp_configured": email_service.is_smtp_configured(),
+            })
+            return
+
         # Route: Encrypt (256-Bit Split AES-GCM with Text and/or File)
         if path == "/api/encrypt":
             plaintext = data.get("text", "")

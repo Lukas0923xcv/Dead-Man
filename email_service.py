@@ -124,6 +124,7 @@ SecureVault Team
             f"  -> Key B: {key_b}\n"
             f"  (SMTP_USER or SMTP_PASS not set in environment/.env)\n"
         )
+        sys.stderr.flush()
         return True, f"Key B dispatched to {to_email} (Simulation Mode: SMTP_USER not set in .env)."
 
     # Send live email via SMTP
@@ -152,6 +153,7 @@ SecureVault Team
                 server.sendmail(config["from"], [to_email], msg.as_string())
 
         sys.stderr.write(f"[EmailService - Success] Key B sent to {to_email} via {config['host']}:{config['port']}\n")
+        sys.stderr.flush()
         return True, f"Key B successfully emailed to {to_email} via {config['host']}."
 
     except smtplib.SMTPAuthenticationError as auth_err:
@@ -160,10 +162,12 @@ SecureVault Team
             f"If using Gmail, you must use a 16-character App Password (not your regular account password). Details: {auth_err}"
         )
         sys.stderr.write(f"[EmailService - AuthError] {err_msg}\n")
+        sys.stderr.flush()
         return False, err_msg
     except Exception as e:
         err_msg = f"SMTP error ({config['host']}:{config['port']}): {e}"
         sys.stderr.write(f"[EmailService - Error] {err_msg}\n")
+        sys.stderr.flush()
         return False, err_msg
 
 
