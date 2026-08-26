@@ -393,9 +393,6 @@ MONITOR_HTML = """<!DOCTYPE html>
         </div>
       </div>
       <div class="header-controls">
-        <button class="btn" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':8080', '_blank')" title="Open Primary Vault">
-          🔐 Vault (8080) ↗
-        </button>
         <button class="btn" id="refresh-btn" onclick="fetchStatus()">
           <span id="refresh-icon">🔄</span> Refresh
         </button>
@@ -455,11 +452,6 @@ MONITOR_HTML = """<!DOCTYPE html>
     <!-- Footer -->
     <div class="footer">
       <span id="last-updated-text">Last updated: Just now</span>
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <a href="javascript:void(0)" onclick="window.open(window.location.protocol + '//' + window.location.hostname + ':8080', '_blank')" style="color: var(--accent); text-decoration: none; font-weight: 500;">🔐 Vault Server (:8080) ↗</a>
-        <span style="color: var(--border);">•</span>
-        <a href="https://github.com/Lukas0923xcv/Linux-test" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: none;">GitHub Repository ↗</a>
-      </div>
       <span>SecureVault Monitor v1.0.0</span>
     </div>
   </div>
