@@ -2065,6 +2065,8 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     if not storage.code_exists(code, storage_dir):
                         break
 
+                inactivity_days = int(data.get("inactivity_days") or self.server.inactivity_days)
+
                 storage.save_vault_record(
                     code=code,
                     encrypted_text=encrypted_text,
@@ -2072,6 +2074,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     recipient_email=recipient_email,
                     device_id=device_id,
                     mode="normal",
+                    inactivity_days=inactivity_days,
                     storage_dir=storage_dir,
                 )
 
@@ -2084,7 +2087,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                         "has_file": bool(file_obj),
                         "recipient_email": recipient_email.strip() if recipient_email else None,
                         "device_bound": bool(device_id),
-                        "inactivity_days": self.server.inactivity_days,
+                        "inactivity_days": inactivity_days,
                         "mode": "normal",
                         "algorithm": f"AES-256-GCM ({key_bits}-Bit Split)",
                         "message": f"Encrypted payload saved in Normal Mode under code '{code}'.",

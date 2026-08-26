@@ -53,11 +53,12 @@ def save_vault_record(
     recipient_email: Optional[str] = None,
     device_id: Optional[str] = None,
     mode: str = "normal",
+    inactivity_days: int = 30,
     storage_dir: str = DEFAULT_STORAGE_DIR,
 ) -> str:
     """
     Save a new vault record with ciphertext, server key (Key B), recipient email,
-    device binding ID, and initial activity timestamp.
+    device binding ID, inactivity timeout days, and initial activity timestamp.
     """
     ensure_storage_dir(storage_dir)
     file_path = get_file_path(code, storage_dir)
@@ -70,6 +71,7 @@ def save_vault_record(
         "server_key_b": server_key_b,
         "device_id": device_id.strip() if device_id else None,
         "recipient_email": recipient_email.strip() if recipient_email else None,
+        "inactivity_days": int(inactivity_days),
         "created_at": now_iso,
         "last_active_at": now_iso,
         "inherited_at": None,
@@ -146,11 +148,11 @@ def get_inactive_expired_records(
 ) -> List[str]:
     """
     Scan all vault records and return codes of records that have exceeded the inactivity limit in Normal Mode.
+    Uses each record's specific inactivity window (with fallback to server default).
     """
     ensure_storage_dir(storage_dir)
     expired_codes = []
     now = datetime.datetime.now(datetime.timezone.utc)
-    cutoff_delta = datetime.timedelta(days=inactivity_days)
 
     for filename in os.listdir(storage_dir):
         if not filename.endswith(".json"):
@@ -166,6 +168,10 @@ def get_inactive_expired_records(
             last_active_str = record.get("last_active_at") or record.get("created_at")
             if not last_active_str:
                 continue
+
+            # Per-record inactivity window
+            rec_inactivity = int(record.get("inactivity_days") or inactivity_days)
+            cutoff_delta = datetime.timedelta(days=rec_inactivity)
 
             # Parse ISO timestamp (handling 'Z' or '+00:00')
             last_active_str = last_active_str.replace("Z", "+00:00")
@@ -238,12 +244,11 @@ def get_all_vault_statuses(
 ) -> List[Dict]:
     """
     Scan all vault records and return a sanitized list of statuses for monitoring.
-    Contains code, mode, time remaining, and timestamps without leaking ciphertext or keys.
+    Contains code, mode, per-record inactivity window, time remaining, and timestamps without leaking ciphertext or keys.
     """
     ensure_storage_dir(storage_dir)
     statuses = []
     now = datetime.datetime.now(datetime.timezone.utc)
-    inactivity_delta = datetime.timedelta(days=inactivity_days)
 
     for filename in sorted(os.listdir(storage_dir)):
         if not filename.endswith(".json"):
@@ -259,6 +264,8 @@ def get_all_vault_statuses(
             last_active_str = record.get("last_active_at") or created_at
             inherited_at = record.get("inherited_at")
             has_recipient = bool(record.get("recipient_email"))
+            rec_inactivity_days = int(record.get("inactivity_days") or inactivity_days)
+            inactivity_delta = datetime.timedelta(days=rec_inactivity_days)
 
             seconds_remaining = 0
             time_left_formatted = "N/A"
@@ -286,11 +293,12 @@ def get_all_vault_statuses(
             statuses.append({
                 "code": code,
                 "mode": mode,
+                "inactivity_days": rec_inactivity_days,
+                "inactivity_formatted": f"{rec_inactivity_days}d" if rec_inactivity_days == 1 else f"{rec_inactivity_days} Days",
                 "created_at": created_at,
                 "last_active_at": last_active_str,
                 "inherited_at": inherited_at,
                 "deadline_at": deadline_iso,
-                "inactivity_days": inactivity_days,
                 "seconds_remaining": seconds_remaining,
                 "time_left_formatted": time_left_formatted,
                 "has_recipient_email": has_recipient,

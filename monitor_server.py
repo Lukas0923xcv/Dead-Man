@@ -299,6 +299,21 @@ MONITOR_HTML = """<!DOCTYPE html>
       background: currentColor;
     }
 
+    /* Inactivity Badge */
+    .inactivity-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-bright);
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
     /* Countdown display */
     .countdown {
       font-family: 'JetBrains Mono', monospace;
@@ -425,13 +440,14 @@ MONITOR_HTML = """<!DOCTYPE html>
           <tr>
             <th>8-Digit Short Code</th>
             <th>Mode</th>
+            <th>Inactivity Window</th>
             <th>Time Left (Dead Man's Switch)</th>
             <th class="hide-mobile">Last Activity / Created</th>
           </tr>
         </thead>
         <tbody id="records-tbody">
           <tr>
-            <td colspan="4" class="empty-state">
+            <td colspan="5" class="empty-state">
               <div class="empty-icon">⏳</div>
               <div>Loading records...</div>
             </td>
@@ -530,7 +546,7 @@ MONITOR_HTML = """<!DOCTYPE html>
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="4" class="empty-state">
+            <td colspan="5" class="empty-state">
               <div class="empty-icon">📭</div>
               <div>${recordsData.length === 0 ? 'No encrypted vault records found in storage.' : 'No records match the filter criteria.'}</div>
             </td>
@@ -571,6 +587,8 @@ MONITOR_HTML = """<!DOCTYPE html>
           dateDisplay = new Date(r.created_at).toLocaleString();
         }
 
+        const inactivityDaysText = r.inactivity_days ? (r.inactivity_days + ' Days') : '30 Days';
+
         html += `
           <tr>
             <td>
@@ -580,6 +598,9 @@ MONITOR_HTML = """<!DOCTYPE html>
               </span>
             </td>
             <td>${modeBadge}</td>
+            <td>
+              <span class="inactivity-badge">⏱ ${inactivityDaysText}</span>
+            </td>
             <td>
               <div class="countdown ${countdownClass}">${countdownStr}</div>
               <div class="time-subtext">${isNormal ? (r.deadline_at ? 'Trigger Deadline: ' + new Date(r.deadline_at).toLocaleDateString() : '') : (r.inherited_at ? 'Triggered at: ' + new Date(r.inherited_at).toLocaleDateString() : 'Key B Dispatched')}</div>
