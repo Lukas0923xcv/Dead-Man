@@ -82,6 +82,7 @@ if [ ! -f .env ]; then
     echo -e "${BLUE}[*] Creating default .env configuration...${NC}"
     cat <<EOF > .env
 PORT=8080
+MONITOR_PORT=8081
 KEY_BITS=256
 STORAGE_DIR=/app/data/vault
 SMTP_HOST=smtp.gmail.com
@@ -91,6 +92,11 @@ SMTP_PASS=
 SMTP_FROM=
 EOF
   fi
+fi
+
+# Ensure MONITOR_PORT is in .env if missing
+if ! grep -q "^MONITOR_PORT=" .env; then
+  echo "MONITOR_PORT=8081" >> .env
 fi
 
 # 5. Ensure persistent storage directory exists with proper permissions
@@ -105,13 +111,16 @@ $SUDO $COMPOSE_CMD up -d --build
 SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
 PORT_VAL=$(grep -E "^PORT=" .env | cut -d= -f2 || echo "8080")
 [ -z "$PORT_VAL" ] && PORT_VAL="8080"
+MONITOR_PORT_VAL=$(grep -E "^MONITOR_PORT=" .env | cut -d= -f2 || echo "8081")
+[ -z "$MONITOR_PORT_VAL" ] && MONITOR_PORT_VAL="8081"
 
 echo -e "\n${GREEN}============================================================${NC}"
-echo -e "${GREEN}  ✓ SecureVault is RUNNING and READY!                        ${NC}"
+echo -e "${GREEN}  ✓ SecureVault & Dead Man Monitor are RUNNING!             ${NC}"
 echo -e "${GREEN}============================================================${NC}"
-echo -e "  🌐 Web Interface: ${GREEN}http://${SERVER_IP}:${PORT_VAL}/${NC}"
-echo -e "  📁 Persistent Data: ./data/vault"
-echo -e "  🛡️ Encryption: 4096-Bit Dual-Key Split (HKDF-SHA512 + AES-GCM)"
+echo -e "  🌐 Primary Vault App:   ${GREEN}http://${SERVER_IP}:${PORT_VAL}/${NC}"
+echo -e "  ⏱️ Dead Man Monitor:    ${GREEN}http://${SERVER_IP}:${MONITOR_PORT_VAL}/${NC}"
+echo -e "  📁 Persistent Data:     ./data/vault"
+echo -e "  🛡️ Encryption:          256-Bit Dual-Key Split (AES-256-GCM)"
 echo -e "\nUseful Commands:"
 echo -e "  - View logs:   ${BLUE}$COMPOSE_CMD logs -f${NC}"
 echo -e "  - Stop vault:  ${BLUE}$COMPOSE_CMD down${NC}"
