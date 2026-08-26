@@ -229,11 +229,11 @@ class TestServerIntegration(unittest.TestCase):
         self.assertIsNone(updated_rec["device_id"])
         self.assertIsNotNone(updated_rec["inherited_at"])
 
-    def test_encrypt_with_disabled_auto_inheritance(self):
-        """Test encrypting with auto_inherit=False avoids auto-expiry."""
+    def test_stopped_auto_inheritance_avoids_expiry(self):
+        """Test stopping auto-inheritance for a record avoids auto-expiry even after 100 days."""
         payload = json.dumps({
-            "text": "Permanent Secret Without Auto Expiry",
-            "auto_inherit": False,
+            "text": "Secret that gets inheritance stopped",
+            "recipient_email": "heir@example.com",
             "device_id": "dev_perm_user"
         }).encode("utf-8")
 
@@ -242,8 +242,10 @@ class TestServerIntegration(unittest.TestCase):
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode("utf-8"))
             code = data["code"]
-            self.assertFalse(data["auto_inherit"])
-            self.assertEqual(data["inactivity_days"], 0)
+            key_a = data["key_a"]
+
+        # Stop auto-inheritance
+        storage.disable_auto_inheritance(code, self.test_storage_dir)
 
         # Backdate the record by 100 days
         file_path = storage.get_file_path(code, self.test_storage_dir)

@@ -1098,24 +1098,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="enc-auto-inherit">
-            <span data-i18n="enc_label_auto_inherit">Automatischer Nachlass (Dead Man's Switch)</span>
-          </label>
-          <select id="enc-auto-inherit" onchange="toggleAutoInheritOption()" style="width: 100%; padding: 9px 12px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text-bright); font-family: inherit; font-size: 13.5px;">
-            <option value="enabled" data-i18n="opt_inherit_30d">Aktiviert (30 Tage Inaktivität — Empfänger-E-Mail Pflicht)</option>
-            <option value="disabled" data-i18n="opt_inherit_never">Deaktiviert / Nie (Keine automatische Vererbung, kein Timer)</option>
-          </select>
-        </div>
-
         <div class="form-group" id="recipient-email-group">
           <label for="recipient-email">
-            <span id="enc-email-label-text" data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</span> <span id="enc-email-asterisk" style="color: var(--danger, #f85149); font-weight: 700;">*</span>
+            <span data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</span> <span style="color: var(--danger, #f85149); font-weight: 700;">*</span>
           </label>
           <input type="email" id="recipient-email" placeholder="recipient@example.com" required>
           <div id="enc-email-warning-box" style="margin-top: 6px; font-size: 12px; line-height: 1.45; color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 6px;">
             <span style="font-size: 14px; line-height: 1;">⚠️</span>
-            <span id="enc-email-warning-text" data-i18n="enc_email_warning"><strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses (Inheritance / 30 Tage Inaktivität) unwiderruflich verloren!</span>
+            <span id="enc-email-warning-text" data-i18n="enc_email_warning"><strong>Dead-Man-Switch-System:</strong> Wir sind kein Cloud-Speicher. Jeder Eintrag ist an einen 30-Tage-Inaktivitätstimer gebunden. Bei Auslösung wird Schlüssel B an diesen Empfänger gesendet und 30 Tage danach werden alle Daten unwiderruflich gelöscht.</span>
           </div>
         </div>
 
@@ -1261,7 +1251,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <footer>
-      <span data-i18n="footer_text">SecureVault • Zero-Knowledge Kryptographische Verwahrung • Schweiz</span>
+      <span data-i18n="footer_text">SecureVault • Zero-Knowledge Dead Man's Switch • Schweiz</span>
     </footer>
   </div>
 
@@ -1273,8 +1263,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         nav_decrypt: "Entschlüsseln",
         nav_info: "Info",
         
-        hero_title: "Zero-Knowledge Digitaler Tresor & Kryptographische Verwahrung",
-        hero_desc: "Vertrauliche Dateien, Zugangsdaten, Dokumente und digitale Nachlässe sicher speichern. Ende-zu-Ende verschlüsselt mit 256-Bit Split-Keys in der Schweiz unter strengsten Datenschutzrichtlinien.",
+        hero_title: "Zero-Knowledge Digitaler Tresor & Dead Man's Switch",
+        hero_desc: "Kryptographischer Dead-Man-Switch zur sicheren Verwahrung vertraulicher Dokumente und digitaler Nachlässe. Wir sind ein reiner Dead-Man-Dienst, kein permanenter Cloud-Speicher. Daten im Nachlassmodus werden 30 Tage nach Freigabe unwiderruflich gelöscht.",
         btn_open_vault: "Tresor öffnen →",
         btn_more_info: "Mehr Informationen",
         
@@ -1282,118 +1272,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         hl1_desc: "Weder Schlüssel A noch B allein kann entschlüsseln.",
         hl2_title: "Schweizer Zero-Knowledge",
         hl2_desc: "Server speichert 0 KB Klartext. Keine Einsicht möglich.",
-        hl3_title: "Automatischer Nachlass",
-        hl3_desc: "Übergabe nach 30 Tagen Inaktivität oder sofort manuell.",
-        
-        modal_title: "Funktionsweise & Architektur",
-        flow_title: "Kryptographische Verwahrungs-Pipeline",
-        step1_title: "Geheimnis eingeben",
-        step1_desc: "Text eingeben oder vertrauliche Dateien anhängen.",
-        step2_title: "Split-Key Aufteilung",
-        step2_desc: "Erzeugung von 256-Bit Schlüssel A und Schlüssel B.",
-        step3_title: "Zero-Knowledge",
-        step3_desc: "Vollständig als Chiffretext vor der Speicherung verschlüsselt.",
-        step4_title: "Abrufen / Vererben",
-        step4_desc: "Direkte Geräte-Entschlüsselung oder Nachlass-Übergabe.",
-        
-        feat1_title: "Dual-Key Split (256-Bit)",
-        feat1_desc: "Jeder Datensatz wird in Schlüssel A und Schlüssel B aufgeteilt. Kein Schlüssel allein kann entschlüsseln. Nur beide zusammen stellen Ihre Daten wieder her.",
-        feat2_title: "Gerätegebundener Normalmodus",
-        feat2_desc: "Auf Ihrem Hauptgerät wird Schlüssel B automatisch angewendet. Sie benötigen zur Entschlüsselung lediglich Ihren 16-stelligen Code und Schlüssel A.",
-        feat3_title: "30-Tage Inaktivitäts-Nachlass & Manuelle Übergabe",
-        feat3_desc: "Besuchen Sie die Seite 30 Tage lang nicht (oder lösen Sie die Übergabe manuell aus), wird Schlüssel B per E-Mail an Ihren Erben gesendet und unwiderruflich vom Server gelöscht.",
-        feat4_title: "Verschlüsselte Dateianhänge",
-        feat4_desc: "Vertrauliche PDFs, Dokumente, Ausweiskopien oder Bilder anhängen – mit 1-Klick-Entschlüsselung direkt im Browser.",
-        feat5_title: "Zero-Knowledge Speicher",
-        feat5_desc: "Dateien, Texte und Dateinamen werden vor der Speicherung verschlüsselt. Server-Infrastrukturen haben keinerlei Einsicht in Ihre Daten.",
-        feat6_title: "Schweizer Datenschutz & Standort",
-        feat6_desc: "Betrieben nach strengen Schweizer Datenschutzgesetzen. Höchste Privatsphäre ohne Tracker und ohne Telemetrie.",
-        
-        spec_enc: "Verschlüsselung:",
-        spec_split: "Key-Split:",
-        spec_plain: "Klartext:",
-        spec_plain_val: "0 KB gespeichert",
-        spec_inactivity: "Inaktivität:",
-        spec_inactivity_val: "30 Tage",
-        spec_juris: "Standort:",
-        spec_juris_val: "Schweiz",
-        
-        tab_encrypt: "Verschlüsseln",
-        tab_decrypt: "Entschlüsseln",
-        tab_inherit: "Vererbung",
-        
-        enc_title: "Daten & Dateien verschlüsseln",
-        enc_subtitle: "Verschlüsselt mit Dual-Key-Split. Der Server kann Dateien oder Texte nicht lesen.",
-        enc_label_text: "Geheime Notizen / Information",
-        enc_hint_text: "(Optional bei Dateianhang)",
-        enc_ph_text: "Vertrauliche Notizen, Passwörter oder Anweisungen eingeben...",
-        enc_label_file: "Datei anhängen",
-        enc_hint_file: "(Optional — vollständig durch Schlüssel verschlüsselt)",
-        dropzone_text: "Klicken zum Auswählen oder Datei hierher ziehen",
-        dropzone_hint: "Dokumente, PDFs, Bilder, Archive — jedes Dateiformat",
-        enc_label_auto_inherit: "Automatischer Nachlass (Dead Man's Switch)",
-        opt_inherit_30d: "Aktiviert (30 Tage Inaktivität — Empfänger-E-Mail Pflicht)",
-        opt_inherit_never: "Deaktiviert / Nie (Keine automatische Vererbung, kein Timer)",
-        enc_label_email: "Empfänger-E-Mail (Pflichtfeld)",
-        enc_label_email_optional: "Empfänger-E-Mail (Optional)",
-        enc_email_warning: "<strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses (Inheritance / 30 Tage Inaktivität) unwiderruflich verloren!",
-        enc_email_disabled_note: "ℹ️ <strong>Hinweis:</strong> Automatischer Nachlass ist deaktiviert. Schlüssel B wird niemals automatisch übertragen.",
-        btn_encrypt_save: "Verschlüsseln & Speichern",
-        enc_success: "Erfolgreich gespeichert. Auf diesem Gerät benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.",
-        label_storage_code: "Speichercode",
-        label_key_a: "Ihr privater Schlüssel A",
-        
-        dec_title: "Daten & Dateien entschlüsseln",
-        dec_subtitle: "Geben Sie Ihren Speichercode und Schlüssel A ein, um Ihre Daten abzurufen.",
-        dec_label_code: "Speichercode",
-        dec_ph_code: "16-stelliger Code",
-        dec_label_key_a: "Schlüssel A",
-        dec_ph_key_a: "Schlüssel A einfügen...",
-        dec_label_key_b: "Schlüssel B",
-        dec_hint_key_b: "(Nur auf Zweitgeräten oder im Nachlassmodus nötig)",
-        dec_ph_key_b: "Auf dem Originalgerät leer lassen...",
-        btn_decrypt: "Entschlüsseln",
-        btn_download_file: "Datei herunterladen",
-        label_dec_text: "Entschlüsselter Text",
-        
-        inh_title: "Nachlass übergeben (Vererbung)",
-        inh_subtitle: "Gibt Schlüssel B an den Empfänger frei oder deaktiviert den automatischen Nachlass dauerhaft.",
-        inh_warning: "<strong>Automatischer & Manueller Schutz:</strong> Wenn Sie die Seite 30 Tage lang nicht besuchen, wird Schlüssel B automatisch an den Empfänger gesendet. Sie können die Übergabe hier jederzeit sofort manuell ausführen oder die automatische Vererbung dauerhaft stoppen.",
-        label_inh_key_a: "Schlüssel A (zur Autorisierung)",
-        btn_inherit: "🚀 Nachlass jetzt ausführen",
-        btn_stop_inherit: "🛑 Nachlass dauerhaft stoppen",
-        inh_success: "<strong>Nachlass übergeben:</strong> Schlüssel B wurde unwiderruflich aus dem Serverspeicher gelöscht.",
-        inh_stopped_success: "<strong>Nachlass dauerhaft gestoppt:</strong> Der automatische Dead Man's Switch wurde für diesen Code deaktiviert. Schlüssel B wird niemals automatisch übertragen.",
-        label_released_key_b: "Freigegebener Schlüssel B",
-        
-        btn_copy: "Kopieren",
-        btn_copied: "Kopiert",
-        footer_text: "SecureVault • Zero-Knowledge Kryptographische Verwahrung • Schweiz",
-        
-        err_fill_payload: "Bitte Text eingeben oder eine Datei anhängen.",
-        err_code_key_req: "Sowohl der Speichercode als auch Schlüssel A sind erforderlich.",
-        err_code_req: "Bitte den 16-stelligen Speichercode eingeben.",
-        err_email_req: "Bitte eine gültige Empfänger-E-Mail-Adresse eingeben (Pflichtfeld). Ohne gültige E-Mail-Adresse geht der Schlüssel bei Vererbung verloren!"
-      },
-      en: {
-        nav_overview: "Overview",
-        nav_encrypt: "Encrypt",
-        nav_decrypt: "Decrypt",
-        nav_info: "Info",
-        
-        hero_title: "Zero-Knowledge Digital Vault & Cryptographic Custody",
-        hero_desc: "Kryptographischer Dead-Man-Switch zur sicheren Verwahrung vertraulicher Dokumente und digitaler Nachlässe. Wir sind ein reiner Dead-Man-Dienst, kein permanenter Cloud-Speicher. Daten im Nachlassmodus werden 30 Tage nach Freigabe unwiderruflich gelöscht.",
-        btn_open_vault: "Tresor öffnen →",
-        btn_more_info: "Mehr Informationen",
-        
-        hl1_title: "Dual-Key Split (256-Bit)",
-        hl1_desc: "Kein Schlüssel allein kann entschlüsseln.",
-        hl2_title: "Schweizer Zero-Knowledge",
-        hl2_desc: "Server speichert 0 KB Klartext. Keine Einsicht.",
         hl3_title: "Dead Man's Switch & Auto-Löschung",
         hl3_desc: "Vererbung nach Inaktivität. Datenlöschung 30 Tage nach Nachlass.",
         
-        modal_title: "Architektur & Funktionsweise",
+        modal_title: "Funktionsweise & Architektur",
         flow_title: "Kryptographische Verwahrungs-Pipeline",
         step1_title: "Geheimnis eingeben",
         step1_desc: "Text eingeben oder vertrauliche Dateien anhängen.",
@@ -1439,13 +1321,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_hint_file: "(Optional — vollständig durch Schlüssel verschlüsselt)",
         dropzone_text: "Klicken zum Auswählen oder Datei hierher ziehen",
         dropzone_hint: "Dokumente, PDFs, Bilder, Archive — jedes Dateiformat",
-        enc_label_auto_inherit: "Automatischer Nachlass (Dead Man's Switch)",
-        opt_inherit_30d: "Aktiviert (30 Tage Inaktivität — Empfänger-E-Mail Pflicht)",
-        opt_inherit_never: "Deaktiviert / Nie (Keine automatische Vererbung, kein Timer)",
         enc_label_email: "Empfänger-E-Mail (Pflichtfeld)",
-        enc_label_email_optional: "Empfänger-E-Mail (Optional)",
-        enc_email_warning: "<strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses unwiderruflich verloren! (Daten werden 30 Tage nach Nachlass gelöscht).",
-        enc_email_disabled_note: "ℹ️ <strong>Hinweis:</strong> Automatischer Nachlass ist deaktiviert. Schlüssel B wird niemals automatisch übertragen.",
+        enc_email_warning: "<strong>Dead-Man-Switch-System:</strong> Wir sind kein Cloud-Speicher. Jeder Eintrag ist an einen 30-Tage-Inaktivitätstimer gebunden. Bei Auslösung wird Schlüssel B an diesen Empfänger gesendet und 30 Tage danach werden alle Daten unwiderruflich gelöscht.",
         btn_encrypt_save: "Verschlüsseln & Speichern",
         enc_success: "Erfolgreich gespeichert. Auf diesem Gerät benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.",
         label_storage_code: "Speichercode",
@@ -1548,13 +1425,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_hint_file: "(Optional — fully encrypted by the keys)",
         dropzone_text: "Click to choose a file or drag & drop",
         dropzone_hint: "Documents, PDFs, Images, Archives, Any file type",
-        enc_label_auto_inherit: "Automatic Inheritance (Dead Man's Switch)",
-        opt_inherit_30d: "Enabled (30 Days Inactivity — Recipient Email Required)",
-        opt_inherit_never: "Disabled / Never (No auto-inheritance, timer stopped)",
         enc_label_email: "Recipient Email (Required)",
-        enc_label_email_optional: "Recipient Email (Optional)",
-        enc_email_warning: "<strong>Important:</strong> If no valid email address is provided, your data and Key B will be permanently lost upon activation of inheritance! (Data is permanently deleted 30 days after inheritance).",
-        enc_email_disabled_note: "ℹ️ <strong>Note:</strong> Automatic inheritance is disabled. Key B will never be automatically transferred.",
+        enc_email_warning: "<strong>Dead Man's Switch System:</strong> We are not a cloud storage host. Every entry is bound to a 30-day inactivity timer. Upon trigger, Key B is sent to this recipient and 30 days later all data is permanently deleted.",
         btn_encrypt_save: "Encrypt & Save",
         enc_success: "Saved successfully. On this device, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
         label_storage_code: "Storage Code",
@@ -1784,42 +1656,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('tab-inherit').style.display = tabName === 'inherit' ? 'block' : 'none';
     }
 
-    function toggleAutoInheritOption() {
-      const mode = document.getElementById('enc-auto-inherit').value;
-      const isEnabled = mode === 'enabled';
-      const emailInput = document.getElementById('recipient-email');
-      const asterisk = document.getElementById('enc-email-asterisk');
-      const labelText = document.getElementById('enc-email-label-text');
-      const warningText = document.getElementById('enc-email-warning-text');
-      const warningBox = document.getElementById('enc-email-warning-box');
-
-      if (isEnabled) {
-        emailInput.required = true;
-        if (asterisk) asterisk.style.display = 'inline';
-        if (labelText) labelText.textContent = I18N[currentLang].enc_label_email;
-        if (warningText) warningText.innerHTML = I18N[currentLang].enc_email_warning;
-        if (warningBox) {
-          warningBox.style.color = '#f85149';
-          warningBox.style.background = 'rgba(248, 81, 73, 0.1)';
-          warningBox.style.borderColor = 'rgba(248, 81, 73, 0.25)';
-        }
-      } else {
-        emailInput.required = false;
-        if (asterisk) asterisk.style.display = 'none';
-        if (labelText) labelText.textContent = I18N[currentLang].enc_label_email_optional;
-        if (warningText) warningText.innerHTML = I18N[currentLang].enc_email_disabled_note;
-        if (warningBox) {
-          warningBox.style.color = 'var(--text-muted)';
-          warningBox.style.background = 'rgba(110, 118, 129, 0.1)';
-          warningBox.style.borderColor = 'rgba(110, 118, 129, 0.25)';
-        }
-      }
-    }
-
     async function handleEncrypt() {
       const text = document.getElementById('plaintext').value.trim();
-      const autoInheritVal = document.getElementById('enc-auto-inherit').value;
-      const auto_inherit = autoInheritVal === 'enabled';
       const recipient_email = document.getElementById('recipient-email').value.trim();
       const device_id = getOrCreateDeviceId();
       const errBox = document.getElementById('enc-error');
@@ -1833,20 +1671,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         return;
       }
 
-      if (auto_inherit) {
-        if (!recipient_email || !recipient_email.includes('@') || !recipient_email.includes('.')) {
-          errBox.textContent = I18N[currentLang].err_email_req;
-          errBox.style.display = 'block';
-          document.getElementById('recipient-email').focus();
-          return;
-        }
+      if (!recipient_email || !recipient_email.includes('@') || !recipient_email.includes('.')) {
+        errBox.textContent = I18N[currentLang].err_email_req;
+        errBox.style.display = 'block';
+        document.getElementById('recipient-email').focus();
+        return;
       }
 
       try {
-        const payload = { text, auto_inherit, device_id };
+        const payload = { text, recipient_email, device_id };
         if (selectedFileObject) payload.file = selectedFileObject;
-        if (recipient_email) payload.recipient_email = recipient_email;
-        if (!auto_inherit) payload.inactivity_days = 0;
 
         const res = await fetch('/api/encrypt', {
           method: 'POST',
@@ -1860,21 +1694,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('res-key-a').textContent = data.key_a;
 
         const emailInfo = document.getElementById('res-email-info');
-        if (auto_inherit && recipient_email) {
-          const msg = currentLang === 'de'
-            ? `✉️ Empfänger registriert: <strong>${recipient_email}</strong> (Schlüssel B wird bei 30 Tagen Inaktivität oder manueller Vererbung gesendet).`
-            : `✉️ Recipient registered: <strong>${recipient_email}</strong> (Key B will be emailed upon 30-day inactivity or manual transfer).`;
-          emailInfo.innerHTML = msg;
-          emailInfo.style.display = 'block';
-        } else if (!auto_inherit) {
-          const msg = currentLang === 'de'
-            ? `♾️ <strong>Automatischer Nachlass deaktiviert:</strong> Dieser Tresor-Eintrag läuft niemals ab und wird niemals automatisch vererbt.`
-            : `♾️ <strong>Automatic inheritance disabled:</strong> This vault entry never expires and will never be automatically inherited.`;
-          emailInfo.innerHTML = msg;
-          emailInfo.style.display = 'block';
-        } else {
-          emailInfo.style.display = 'none';
-        }
+        const msg = currentLang === 'de'
+          ? `✉️ Empfänger registriert: <strong>${recipient_email}</strong> (Schlüssel B wird bei 30 Tagen Inaktivität gesendet; Datenlöschung 30 Tage danach).`
+          : `✉️ Recipient registered: <strong>${recipient_email}</strong> (Key B dispatched after 30 days inactivity; data purged 30 days thereafter).`;
+        emailInfo.innerHTML = msg;
+        emailInfo.style.display = 'block';
 
         resBox.style.display = 'block';
       } catch (err) {
@@ -2291,25 +2115,21 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             plaintext = data.get("text", "")
             file_obj = data.get("file")
             recipient_email = (data.get("recipient_email") or "").strip()
-            auto_inherit = bool(data.get("auto_inherit", True))
+            device_id = data.get("device_id") or self.headers.get("X-Device-ID")
             raw_inactivity = data.get("inactivity_days")
             inactivity_days = int(raw_inactivity) if raw_inactivity is not None else int(self.server.inactivity_days)
-
-            if inactivity_days <= 0 or not auto_inherit:
-                auto_inherit = False
-                inactivity_days = 0
+            auto_inherit = True
 
             if not plaintext and not file_obj:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, "Must provide 'text' or 'file' in JSON payload.")
                 return
 
-            if auto_inherit:
-                if not recipient_email or "@" not in recipient_email or "." not in recipient_email.split("@")[-1]:
-                    self.send_error_response(
-                        HTTPStatus.BAD_REQUEST,
-                        "Recipient email is required when auto-inheritance is enabled. Without a valid email, Key B is permanently lost upon activation of inheritance."
-                    )
-                    return
+            if not recipient_email or "@" not in recipient_email or "." not in recipient_email.split("@")[-1]:
+                self.send_error_response(
+                    HTTPStatus.BAD_REQUEST,
+                    "Recipient email is strictly required. SecureVault is a Dead Man's Switch service, not a cloud storage host. An email address is mandatory for the 30-day inactivity handover."
+                )
+                return
 
             # Package text and file into unified payload before encryption
             package = {
