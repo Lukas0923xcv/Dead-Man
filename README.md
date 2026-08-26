@@ -31,8 +31,8 @@ On your Linux server:
 
 ```bash
 # 1. Pull the repository
-git clone https://github.com/Lukas0923xcv/Linux-test.git
-cd Linux-test
+git clone https://github.com/Lukas0923xcv/Dead-Man.git
+cd Dead-Man
 
 # 2. Run the automated installer (installs Docker if needed & starts container)
 bash setup.sh
