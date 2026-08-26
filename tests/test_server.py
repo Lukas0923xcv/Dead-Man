@@ -87,7 +87,7 @@ class TestServerIntegration(unittest.TestCase):
         other_device = "dev_other_456"
 
         # 1. Encrypt on my_device
-        payload = json.dumps({"text": secret, "device_id": my_device}).encode("utf-8")
+        payload = json.dumps({"text": secret, "device_id": my_device, "recipient_email": "test.owner@example.com"}).encode("utf-8")
         req = Request(f"{self.base_url}/api/encrypt", data=payload, headers={"Content-Type": "application/json"}, method="POST")
         with urlopen(req) as resp:
             self.assertEqual(resp.status, 200)
@@ -110,6 +110,22 @@ class TestServerIntegration(unittest.TestCase):
             urlopen(other_dec_req)
         self.assertEqual(ctx.exception.code, 400)
 
+    def test_recipient_email_required_on_encrypt(self):
+        """Test that /api/encrypt rejects payloads missing or with invalid recipient email."""
+        # 1. Missing email
+        payload_no_email = json.dumps({"text": "Test Secret", "device_id": "dev_test"}).encode("utf-8")
+        req1 = Request(f"{self.base_url}/api/encrypt", data=payload_no_email, headers={"Content-Type": "application/json"}, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(req1)
+        self.assertEqual(ctx.exception.code, 400)
+
+        # 2. Invalid email format
+        payload_bad_email = json.dumps({"text": "Test Secret", "recipient_email": "invalid-email", "device_id": "dev_test"}).encode("utf-8")
+        req2 = Request(f"{self.base_url}/api/encrypt", data=payload_bad_email, headers={"Content-Type": "application/json"}, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(req2)
+        self.assertEqual(ctx.exception.code, 400)
+
     def test_file_attachment_encryption_and_decryption(self):
         """Test attaching, encrypting, and decrypting a binary file payload."""
         sample_file_bytes = b"%PDF-1.4 Mock PDF Content with confidential data \x00\xff\xfe"
@@ -128,6 +144,7 @@ class TestServerIntegration(unittest.TestCase):
         req_body = json.dumps({
             "text": text_note,
             "file": file_payload,
+            "recipient_email": "heir.file@example.com",
             "device_id": device_id,
         }).encode("utf-8")
 

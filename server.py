@@ -1099,8 +1099,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <div class="form-group">
-          <label for="recipient-email"><span data-i18n="enc_label_email">Empfänger-E-Mail</span> <span class="hint" data-i18n="enc_hint_email">(Optional — erhält Schlüssel B bei Vererbung)</span></label>
-          <input type="email" id="recipient-email" placeholder="recipient@example.com">
+          <label for="recipient-email">
+            <span data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</span> <span style="color: var(--danger, #f85149); font-weight: 700;">*</span>
+          </label>
+          <input type="email" id="recipient-email" placeholder="recipient@example.com" required>
+          <div style="margin-top: 6px; font-size: 12px; line-height: 1.45; color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 6px;">
+            <span style="font-size: 14px; line-height: 1;">⚠️</span>
+            <span data-i18n="enc_email_warning"><strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses (Inheritance / 30 Tage Inaktivität) unwiderruflich verloren!</span>
+          </div>
         </div>
 
         <button class="btn-main" onclick="handleEncrypt()" data-i18n="btn_encrypt_save">Verschlüsseln & Speichern</button>
@@ -1302,8 +1308,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_hint_file: "(Optional — vollständig durch Schlüssel verschlüsselt)",
         dropzone_text: "Klicken zum Auswählen oder Datei hierher ziehen",
         dropzone_hint: "Dokumente, PDFs, Bilder, Archive — jedes Dateiformat",
-        enc_label_email: "Empfänger-E-Mail",
-        enc_hint_email: "(Optional — erhält Schlüssel B bei Vererbung)",
+        enc_label_email: "Empfänger-E-Mail (Pflichtfeld)",
+        enc_email_warning: "<strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses (Inheritance / 30 Tage Inaktivität) unwiderruflich verloren!",
         btn_encrypt_save: "Verschlüsseln & Speichern",
         enc_success: "Erfolgreich gespeichert. Auf diesem Gerät benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.",
         label_storage_code: "Speichercode",
@@ -1335,7 +1341,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         err_fill_payload: "Bitte Text eingeben oder eine Datei anhängen.",
         err_code_key_req: "Sowohl der Speichercode als auch Schlüssel A sind erforderlich.",
-        err_code_req: "Bitte den 16-stelligen Speichercode eingeben."
+        err_code_req: "Bitte den 16-stelligen Speichercode eingeben.",
+        err_email_req: "Bitte eine gültige Empfänger-E-Mail-Adresse eingeben (Pflichtfeld). Ohne gültige E-Mail-Adresse geht der Schlüssel bei Vererbung verloren!"
       },
       en: {
         nav_overview: "Overview",
@@ -1401,8 +1408,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_hint_file: "(Optional — fully encrypted by the keys)",
         dropzone_text: "Click to choose a file or drag & drop",
         dropzone_hint: "Documents, PDFs, Images, Archives, Any file type",
-        enc_label_email: "Recipient Email",
-        enc_hint_email: "(Optional — receives Key B upon inheritance)",
+        enc_label_email: "Recipient Email (Required)",
+        enc_email_warning: "<strong>Important:</strong> If no valid email address is provided, your data and Key B will be permanently lost upon activation of inheritance (30 days of inactivity)!",
         btn_encrypt_save: "Encrypt & Save",
         enc_success: "Saved successfully. On this device, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
         label_storage_code: "Storage Code",
@@ -1434,7 +1441,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         err_fill_payload: "Please enter text or attach a file to encrypt.",
         err_code_key_req: "Both the Storage Code and Key A are required.",
-        err_code_req: "Please enter the 16-character Storage Code."
+        err_code_req: "Please enter the 16-character Storage Code.",
+        err_email_req: "Please enter a valid recipient email address (Required). Without a valid email address, the key is lost upon inheritance!"
       }
     };
 
@@ -1642,10 +1650,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         return;
       }
 
+      if (!recipient_email || !recipient_email.includes('@') || !recipient_email.includes('.')) {
+        errBox.textContent = I18N[currentLang].err_email_req;
+        errBox.style.display = 'block';
+        document.getElementById('recipient-email').focus();
+        return;
+      }
+
       try {
-        const payload = { text, device_id };
+        const payload = { text, recipient_email, device_id };
         if (selectedFileObject) payload.file = selectedFileObject;
-        if (recipient_email) payload.recipient_email = recipient_email;
 
         const res = await fetch('/api/encrypt', {
           method: 'POST',
@@ -2032,10 +2046,17 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/encrypt":
             plaintext = data.get("text", "")
             file_obj = data.get("file")
-            recipient_email = data.get("recipient_email")
+            recipient_email = (data.get("recipient_email") or "").strip()
 
             if not plaintext and not file_obj:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, "Must provide 'text' or 'file' in JSON payload.")
+                return
+
+            if not recipient_email or "@" not in recipient_email or "." not in recipient_email.split("@")[-1]:
+                self.send_error_response(
+                    HTTPStatus.BAD_REQUEST,
+                    "Recipient email is required and must be a valid email address. Without a valid email, Key B is permanently lost upon activation of inheritance."
+                )
                 return
 
             # Package text and file into unified payload before encryption
