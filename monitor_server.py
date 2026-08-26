@@ -417,10 +417,6 @@ MONITOR_HTML = """<!DOCTYPE html>
         <div class="stat-label">Inherited (Triggered)</div>
         <div class="stat-value" id="stat-inherited" style="color: var(--inherited-badge-text);">0</div>
       </div>
-      <div class="stat-card hide-mobile">
-        <div class="stat-label">Inactivity Window</div>
-        <div class="stat-value" id="stat-window">30d</div>
-      </div>
     </div>
 
     <!-- Search & Filter Controls -->
@@ -500,9 +496,6 @@ MONITOR_HTML = """<!DOCTYPE html>
         document.getElementById('stat-total').textContent = data.total_count || recordsData.length;
         document.getElementById('stat-normal').textContent = data.normal_count || 0;
         document.getElementById('stat-inherited').textContent = data.inherited_count || 0;
-        if (data.inactivity_days) {
-          document.getElementById('stat-window').textContent = data.inactivity_days + 'd';
-        }
 
         renderTable();
         document.getElementById('last-updated-text').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
