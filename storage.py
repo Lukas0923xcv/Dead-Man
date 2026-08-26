@@ -200,7 +200,8 @@ def get_inactive_expired_records(
 
 def disable_auto_inheritance(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> Dict:
     """
-    Permanently disable automated inheritance for a record (stops the Dead Man's Switch).
+    Permanently disable automated inheritance for a record (disconnects the Dead Man's Switch).
+    Schedules data for final deletion in 30 days.
     """
     record = load_vault_record(code, storage_dir)
     if record is None:
@@ -208,8 +209,12 @@ def disable_auto_inheritance(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) 
     if record.get("mode") == "inherited":
         raise ValueError(f"Record '{code}' has already been transferred to Inherited Mode.")
 
+    now = datetime.datetime.now(datetime.timezone.utc)
     record["auto_inherit"] = False
     record["inactivity_days"] = 0
+    record["mode"] = "stopped"
+    record["killed_at"] = now.isoformat()
+    record["recipient_email"] = None
 
     file_path = get_file_path(code, storage_dir)
     with open(file_path, "w", encoding="utf-8") as f:
@@ -222,8 +227,7 @@ def purge_expired_inherited_records(
     purge_days: int = 30, storage_dir: str = DEFAULT_STORAGE_DIR
 ) -> List[str]:
     """
-    Purge and permanently delete vault files that have been in Inherited Mode for 30+ days.
-    (SecureVault is a Dead Man's Switch service, not a cloud host. Heirs have 30 days to retrieve data).
+    Purge and permanently delete vault files that have been in Inherited or Stopped Mode for 30+ days.
     """
     ensure_storage_dir(storage_dir)
     purged_codes = []
@@ -238,19 +242,20 @@ def purge_expired_inherited_records(
             with open(file_path, "r", encoding="utf-8") as f:
                 record = json.load(f)
 
-            if record.get("mode") != "inherited":
+            mode = record.get("mode")
+            if mode not in ("inherited", "stopped"):
                 continue
 
-            inherited_at_str = record.get("inherited_at")
-            if not inherited_at_str:
+            ts_str = record.get("inherited_at") if mode == "inherited" else record.get("killed_at")
+            if not ts_str:
                 continue
 
-            clean_inh_ts = inherited_at_str.replace("Z", "+00:00")
-            inherited_at = datetime.datetime.fromisoformat(clean_inh_ts)
-            if inherited_at.tzinfo is None:
-                inherited_at = inherited_at.replace(tzinfo=datetime.timezone.utc)
+            clean_ts = ts_str.replace("Z", "+00:00")
+            event_time = datetime.datetime.fromisoformat(clean_ts)
+            if event_time.tzinfo is None:
+                event_time = event_time.replace(tzinfo=datetime.timezone.utc)
 
-            if (now - inherited_at) >= purge_delta:
+            if (now - event_time) >= purge_delta:
                 code = record.get("code") or filename[:-5]
                 os.remove(file_path)
                 purged_codes.append(code)
@@ -336,6 +341,7 @@ def get_all_vault_statuses(
             created_at = record.get("created_at")
             last_active_str = record.get("last_active_at") or created_at
             inherited_at = record.get("inherited_at")
+            killed_at = record.get("killed_at")
             has_recipient = bool(record.get("recipient_email"))
             auto_inherit = record.get("auto_inherit", True)
             rec_inactivity_days = int(record.get("inactivity_days") if "inactivity_days" in record else inactivity_days)
@@ -345,11 +351,7 @@ def get_all_vault_statuses(
             deadline_iso = None
 
             if mode == "normal":
-                if not auto_inherit or rec_inactivity_days <= 0:
-                    time_left_formatted = "♾️ Deaktiviert (Nie)"
-                    inactivity_formatted = "Deaktiviert (Nie)"
-                    seconds_remaining = 9999999999
-                elif last_active_str:
+                if last_active_str:
                     inactivity_delta = datetime.timedelta(days=rec_inactivity_days)
                     inactivity_formatted = f"{rec_inactivity_days}d" if rec_inactivity_days == 1 else f"{rec_inactivity_days} Days"
                     clean_ts = last_active_str.replace("Z", "+00:00")
@@ -368,14 +370,15 @@ def get_all_vault_statuses(
                     inactivity_formatted = f"{rec_inactivity_days} Days"
                     time_left_formatted = "Unknown"
             else:
-                # Inherited Mode: 30-Day Auto-Purge Countdown (Not a cloud host, Dead Man service)
+                # Inherited or Stopped Mode: 30-Day Final Data Purge Window
                 inactivity_formatted = "30d Purge Window"
-                if inherited_at:
-                    clean_inh_ts = inherited_at.replace("Z", "+00:00")
-                    inh_time = datetime.datetime.fromisoformat(clean_inh_ts)
-                    if inh_time.tzinfo is None:
-                        inh_time = inh_time.replace(tzinfo=datetime.timezone.utc)
-                    purge_deadline = inh_time + datetime.timedelta(days=30)
+                ts_str = inherited_at if mode == "inherited" else killed_at
+                if ts_str:
+                    clean_ts = ts_str.replace("Z", "+00:00")
+                    event_time = datetime.datetime.fromisoformat(clean_ts)
+                    if event_time.tzinfo is None:
+                        event_time = event_time.replace(tzinfo=datetime.timezone.utc)
+                    purge_deadline = event_time + datetime.timedelta(days=30)
                     deadline_iso = purge_deadline.isoformat()
                     seconds_left = (purge_deadline - now).total_seconds()
                     seconds_remaining = max(0, int(seconds_left))

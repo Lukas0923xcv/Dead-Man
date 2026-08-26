@@ -319,6 +319,37 @@ class TestServerIntegration(unittest.TestCase):
         self.assertIn(code, purged)
         self.assertFalse(os.path.exists(file_path))
 
+    def test_purge_stopped_deadman_records_after_30_days(self):
+        """Test that records where dead man connection was stopped are deleted after 30 days."""
+        code = "STOPPURGE01"
+        crypto_res = crypto_engine.encrypt_split("Stopped deadman data", key_bits=256)
+        storage.save_vault_record(
+            code=code,
+            encrypted_text=crypto_res["encrypted_text"],
+            server_key_b="ServerKeyB",
+            recipient_email="heir@example.com",
+            mode="normal",
+            storage_dir=self.test_storage_dir,
+        )
+
+        # Stop dead man connection
+        storage.disable_auto_inheritance(code, self.test_storage_dir)
+
+        # Backdate killed_at to 35 days ago
+        file_path = storage.get_file_path(code, self.test_storage_dir)
+        with open(file_path, "r", encoding="utf-8") as f:
+            rec_data = json.load(f)
+        self.assertEqual(rec_data["mode"], "stopped")
+        past_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=35)
+        rec_data["killed_at"] = past_date.isoformat()
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(rec_data, f)
+
+        # Run purge
+        purged = storage.purge_expired_inherited_records(purge_days=30, storage_dir=self.test_storage_dir)
+        self.assertIn(code, purged)
+        self.assertFalse(os.path.exists(file_path))
+
 
 if __name__ == "__main__":
     unittest.main()

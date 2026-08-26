@@ -1196,11 +1196,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
             <div id="res-decrypted" class="item-code" style="white-space: pre-wrap; font-size: 13.5px;"></div>
           </div>
-
-          <!-- Advice Banner to Create New Encryption & Dead Man Notice -->
-          <div id="dec-advice-section" class="alert alert-warning" style="margin-top: 12px; font-size: 13px;">
-            <div data-i18n="dec_advice_new_enc">💡 <strong>Empfehlung:</strong> SecureVault ist ein Dead-Man-Switch-Dienst und kein Cloud-Speicher. Wenn Sie diese Daten weiterhin verwahren möchten, erstellen Sie bitte eine neue Verschlüsselung mit derselben Datei oder demselben Text.</div>
-          </div>
         </div>
       </div>
 
@@ -1340,16 +1335,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         btn_decrypt: "Entschlüsseln",
         btn_download_file: "Datei herunterladen",
         label_dec_text: "Entschlüsselter Text",
-        dec_advice_new_enc: "💡 <strong>Sicherheitshinweis zur Datenverwahrung:</strong> SecureVault ist auf die zeitgesteuerte Nachlassübergabe ausgelegt. Um Ihre Daten weiterhin im Notfallmodus abzusichern, empfehlen wir, diese nach dem Herunterladen erneut zu verschlüsseln.",
         
         inh_title: "Nachlass übergeben (Vererbung)",
         inh_subtitle: "Gibt Schlüssel B an den Empfänger frei oder beendet die automatisierte Weitergabe.",
-        inh_warning: "<strong>Automatisierte Notfallübergabe:</strong> Erfolgt 30 Tage lang keine Aktivität, wird Schlüssel B an den hinterlegten Empfänger übermittelt. Nach erfolgter Übergabe verbleiben 30 Tage zum Abruf, bevor alle Daten unwiderruflich gelöscht werden.",
+        inh_warning: "<strong>Automatisierte Notfallübergabe:</strong> Erfolgt 30 Tage lang keine Aktivität, wird Schlüssel B an den hinterlegten Empfänger übermittelt. Nach erfolgter Übergabe oder Trennung der Verbindung verbleiben 30 Tage zum Abruf, bevor alle Daten unwiderruflich gelöscht werden.",
         label_inh_key_a: "Schlüssel A (zur Autorisierung)",
         btn_inherit: "🚀 Nachlass jetzt übergeben",
         btn_stop_inherit: "🛑 Nachlass dauerhaft stoppen",
         inh_success: "<strong>Nachlassübergabe ausgelöst:</strong> Schlüssel B wurde versendet und vom Server gelöscht. ⚠️ <strong>30-Tage-Abruffrist:</strong> Der Empfänger hat 30 Tage Zeit zum Abruf der Daten, bevor der Datensatz unwiderruflich gelöscht wird.",
-        inh_stopped_success: "<strong>Nachlass dauerhaft gestoppt:</strong> Die automatische Weitergabe wurde deaktiviert. 💡 <strong>Empfehlung:</strong> Sie können bei Bedarf jederzeit eine neue Verschlüsselung anlegen.",
+        inh_stopped_success: "<strong>Nachlassverbindung getrennt:</strong> Die automatische Weitergabe wurde deaktiviert. ⚠️ <strong>30-Tage-Löschfrist:</strong> Nach Trennung der Verbindung verbleiben 30 Tage zum Abruf, bevor die Daten vollständig vom Server gelöscht werden.",
         label_released_key_b: "Freigegebener Schlüssel B",
         
         btn_copy: "Kopieren",
@@ -1444,7 +1438,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         btn_decrypt: "Decrypt",
         btn_download_file: "Download File",
         label_dec_text: "Decrypted Text",
-        dec_advice_new_enc: "💡 <strong>Custody & Retention Advisory:</strong> SecureVault is engineered for automated emergency handover. To maintain continuous emergency protection, we recommend creating a fresh encryption after downloading your data.",
         
         inh_title: "Transfer Custody (Inheritance)",
         inh_subtitle: "Releases Key B to the recipient or stops automated handover.",
@@ -1453,7 +1446,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         btn_inherit: "🚀 Transfer Custody Now",
         btn_stop_inherit: "🛑 Stop Auto-Inheritance Permanently",
         inh_success: "<strong>Custody Handover Executed:</strong> Key B has been dispatched and removed from server memory. ⚠️ <strong>30-Day Retrieval Window:</strong> The recipient has 30 days to retrieve the data before the record is permanently deleted.",
-        inh_stopped_success: "<strong>Auto-Inheritance Permanently Stopped:</strong> The automated Dead Man's Switch has been disabled for this code. 💡 <strong>Recommendation:</strong> You can create a fresh encryption for this file or text anytime.",
+        inh_stopped_success: "<strong>Dead Man Switch Disconnected:</strong> Automated handover has been disabled. ⚠️ <strong>30-Day Purge Window:</strong> Following disconnection, you have 30 days to retrieve your data before it is permanently deleted from the server.",
         label_released_key_b: "Released Key B",
         
         btn_copy: "Copy",
