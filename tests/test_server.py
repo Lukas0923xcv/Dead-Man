@@ -75,6 +75,14 @@ class TestServerIntegration(unittest.TestCase):
         cls.server_thread.start()
         time.sleep(0.1)
 
+        # Register default test account
+        reg_payload = json.dumps({"username": "default_user", "password": "DefaultPassword123!"}).encode("utf-8")
+        reg_req = Request(f"{cls.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            cls.auth_token = data["token"]
+            cls.auth_headers = {"Authorization": f"Bearer {cls.auth_token}"}
+
     @classmethod
     def tearDownClass(cls):
         cls.server.shutdown()
@@ -86,25 +94,26 @@ class TestServerIntegration(unittest.TestCase):
         my_device = "dev_originating_123"
         other_device = "dev_other_456"
 
-        # 1. Encrypt on my_device
+        # 1. Encrypt on my_device (as authenticated user)
+        headers = {"Content-Type": "application/json", **self.auth_headers}
         payload = json.dumps({"text": secret, "device_id": my_device, "recipient_email": "test.owner@example.com"}).encode("utf-8")
-        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers=headers, method="POST")
         with urlopen(req) as resp:
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode("utf-8"))
             code = data["code"]
             key_a = data["key_a"]
 
-        # 2. Decrypt on my_device (Originating) with only Code + Key A -> SUCCEEDS
-        dec_payload = json.dumps({"code": code, "key_a": key_a, "device_id": my_device}).encode("utf-8")
-        dec_req = Request(f"{self.base_url}/api/decrypt", data=dec_payload, headers={"Content-Type": "application/json"}, method="POST")
+        # 2. Decrypt as owner with only Code + Key A -> SUCCEEDS
+        dec_payload = json.dumps({"code": code, "key_a": key_a}).encode("utf-8")
+        dec_req = Request(f"{self.base_url}/api/decrypt", data=dec_payload, headers=headers, method="POST")
         with urlopen(dec_req) as resp:
             self.assertEqual(resp.status, 200)
             dec_data = json.loads(resp.read().decode("utf-8"))
             self.assertEqual(dec_data["decrypted_text"], secret)
 
-        # 3. Decrypt on other_device with only Code + Key A -> 400 Bad Request requesting Key B
-        other_dec_payload = json.dumps({"code": code, "key_a": key_a, "device_id": other_device}).encode("utf-8")
+        # 3. Decrypt unauthenticated with only Code + Key A -> 400 Bad Request requesting Key B
+        other_dec_payload = json.dumps({"code": code, "key_a": key_a}).encode("utf-8")
         other_dec_req = Request(f"{self.base_url}/api/decrypt", data=other_dec_payload, headers={"Content-Type": "application/json"}, method="POST")
         with self.assertRaises(HTTPError) as ctx:
             urlopen(other_dec_req)
@@ -112,16 +121,17 @@ class TestServerIntegration(unittest.TestCase):
 
     def test_recipient_email_required_on_encrypt(self):
         """Test that /api/encrypt rejects payloads missing or with invalid recipient email."""
+        headers = {"Content-Type": "application/json", **self.auth_headers}
         # 1. Missing email
         payload_no_email = json.dumps({"text": "Test Secret", "device_id": "dev_test"}).encode("utf-8")
-        req1 = Request(f"{self.base_url}/api/encrypt", data=payload_no_email, headers={"Content-Type": "application/json"}, method="POST")
+        req1 = Request(f"{self.base_url}/api/encrypt", data=payload_no_email, headers=headers, method="POST")
         with self.assertRaises(HTTPError) as ctx:
             urlopen(req1)
         self.assertEqual(ctx.exception.code, 400)
 
         # 2. Invalid email format
         payload_bad_email = json.dumps({"text": "Test Secret", "recipient_email": "invalid-email", "device_id": "dev_test"}).encode("utf-8")
-        req2 = Request(f"{self.base_url}/api/encrypt", data=payload_bad_email, headers={"Content-Type": "application/json"}, method="POST")
+        req2 = Request(f"{self.base_url}/api/encrypt", data=payload_bad_email, headers=headers, method="POST")
         with self.assertRaises(HTTPError) as ctx:
             urlopen(req2)
         self.assertEqual(ctx.exception.code, 400)
@@ -141,6 +151,7 @@ class TestServerIntegration(unittest.TestCase):
         device_id = "dev_file_tester"
 
         # 1. Encrypt text + file
+        headers = {"Content-Type": "application/json", **self.auth_headers}
         req_body = json.dumps({
             "text": text_note,
             "file": file_payload,
@@ -148,7 +159,7 @@ class TestServerIntegration(unittest.TestCase):
             "device_id": device_id,
         }).encode("utf-8")
 
-        req = Request(f"{self.base_url}/api/encrypt", data=req_body, headers={"Content-Type": "application/json"}, method="POST")
+        req = Request(f"{self.base_url}/api/encrypt", data=req_body, headers=headers, method="POST")
         with urlopen(req) as resp:
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode("utf-8"))
@@ -171,7 +182,7 @@ class TestServerIntegration(unittest.TestCase):
             "device_id": device_id,
         }).encode("utf-8")
 
-        dec_req = Request(f"{self.base_url}/api/decrypt", data=dec_body, headers={"Content-Type": "application/json"}, method="POST")
+        dec_req = Request(f"{self.base_url}/api/decrypt", data=dec_body, headers=headers, method="POST")
         with urlopen(dec_req) as resp:
             self.assertEqual(resp.status, 200)
             dec_data = json.loads(resp.read().decode("utf-8"))
@@ -231,13 +242,14 @@ class TestServerIntegration(unittest.TestCase):
 
     def test_stopped_auto_inheritance_avoids_expiry(self):
         """Test stopping auto-inheritance for a record avoids auto-expiry even after 100 days."""
+        headers = {"Content-Type": "application/json", **self.auth_headers}
         payload = json.dumps({
             "text": "Secret that gets inheritance stopped",
             "recipient_email": "heir@example.com",
             "device_id": "dev_perm_user"
         }).encode("utf-8")
 
-        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers=headers, method="POST")
         with urlopen(req) as resp:
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode("utf-8"))
@@ -263,12 +275,13 @@ class TestServerIntegration(unittest.TestCase):
     def test_disable_auto_inheritance_api(self):
         """Test stopping auto-inheritance for an existing record via API."""
         # 1. Create standard record
+        headers = {"Content-Type": "application/json", **self.auth_headers}
         payload = json.dumps({
             "text": "Standard secret",
             "recipient_email": "heir@example.com",
             "device_id": "dev_stop_test"
         }).encode("utf-8")
-        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        req = Request(f"{self.base_url}/api/encrypt", data=payload, headers=headers, method="POST")
         with urlopen(req) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             code = data["code"]
@@ -350,8 +363,130 @@ class TestServerIntegration(unittest.TestCase):
         self.assertIn(code, purged)
         self.assertFalse(os.path.exists(file_path))
 
+    def test_user_account_registration_and_authentication(self):
+        """Test registering a user, logging in, querying session status, and logging out."""
+        username = "alice_test"
+        password = "MasterPassword123!"
+
+        # 1. Register
+        reg_payload = json.dumps({"username": username, "password": password}).encode("utf-8")
+        reg_req = Request(f"{self.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            token = data["token"]
+            self.assertEqual(data["username"], username)
+
+        # 2. Check /api/me with Bearer token
+        me_req = Request(f"{self.base_url}/api/me", headers={"Authorization": f"Bearer {token}"}, method="GET")
+        with urlopen(me_req) as resp:
+            self.assertEqual(resp.status, 200)
+            me_data = json.loads(resp.read().decode("utf-8"))
+            self.assertTrue(me_data["authenticated"])
+            self.assertEqual(me_data["username"], username)
+
+        # 3. Login with credentials
+        login_payload = json.dumps({"username": username, "password": password}).encode("utf-8")
+        login_req = Request(f"{self.base_url}/api/login", data=login_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(login_req) as resp:
+            self.assertEqual(resp.status, 200)
+            login_data = json.loads(resp.read().decode("utf-8"))
+            new_token = login_data["token"]
+            self.assertIsNotNone(new_token)
+
+        # 4. Login with wrong password fails
+        bad_login_payload = json.dumps({"username": username, "password": "WrongPassword"}).encode("utf-8")
+        bad_login_req = Request(f"{self.base_url}/api/login", data=bad_login_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(bad_login_req)
+        self.assertEqual(ctx.exception.code, 401)
+
+        # 5. Logout
+        logout_req = Request(f"{self.base_url}/api/logout", headers={"Authorization": f"Bearer {new_token}"}, method="POST")
+        with urlopen(logout_req) as resp:
+            self.assertEqual(resp.status, 200)
+
+        # 6. Check /api/me after logout
+        post_logout_req = Request(f"{self.base_url}/api/me", headers={"Authorization": f"Bearer {new_token}"}, method="GET")
+        with urlopen(post_logout_req) as resp:
+            post_data = json.loads(resp.read().decode("utf-8"))
+            self.assertFalse(post_data["authenticated"])
+
+    def test_account_bound_encryption_and_single_key_owner_decryption(self):
+        """Test that an authenticated user encrypts data bound to their account and can decrypt with only Key A."""
+        username = "bob_vault_owner"
+        password = "SecretPassword456!"
+
+        # Register bob
+        reg_payload = json.dumps({"username": username, "password": password}).encode("utf-8")
+        reg_req = Request(f"{self.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            reg_data = json.loads(resp.read().decode("utf-8"))
+            bob_token = reg_data["token"]
+
+        secret_text = "Bob's Top Secret Vault Note"
+        
+        # 1. Unauthenticated /api/encrypt -> 401 Unauthorized
+        unauth_body = json.dumps({"text": secret_text, "recipient_email": "heir@example.com"}).encode("utf-8")
+        unauth_req = Request(f"{self.base_url}/api/encrypt", data=unauth_body, headers={"Content-Type": "application/json"}, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(unauth_req)
+        self.assertEqual(ctx.exception.code, 401)
+
+        # 2. Authenticated /api/encrypt as Bob
+        auth_req = Request(
+            f"{self.base_url}/api/encrypt",
+            data=unauth_body,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {bob_token}"},
+            method="POST"
+        )
+        with urlopen(auth_req) as resp:
+            self.assertEqual(resp.status, 200)
+            enc_data = json.loads(resp.read().decode("utf-8"))
+            code = enc_data["code"]
+            key_a = enc_data["key_a"]
+            self.assertEqual(enc_data["owner_username"], username)
+
+        # 3. Bob queries /api/my-vaults
+        vaults_req = Request(
+            f"{self.base_url}/api/my-vaults",
+            headers={"Authorization": f"Bearer {bob_token}"},
+            method="GET"
+        )
+        with urlopen(vaults_req) as resp:
+            self.assertEqual(resp.status, 200)
+            vaults_data = json.loads(resp.read().decode("utf-8"))
+            self.assertGreaterEqual(vaults_data["count"], 1)
+            codes = [v["code"] for v in vaults_data["vaults"]]
+            self.assertIn(code, codes)
+
+        # 4. Bob decrypts with ONLY Key A (authenticated as Bob) -> SUCCEEDS
+        dec_body = json.dumps({"code": code, "key_a": key_a}).encode("utf-8")
+        dec_req = Request(
+            f"{self.base_url}/api/decrypt",
+            data=dec_body,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {bob_token}"},
+            method="POST"
+        )
+        with urlopen(dec_req) as resp:
+            self.assertEqual(resp.status, 200)
+            dec_res = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(dec_res["decrypted_text"], secret_text)
+
+        # 5. Unauthenticated user decrypts with ONLY Key A -> 400 Bad Request (requires Key B or owner login)
+        unauth_dec_req = Request(
+            f"{self.base_url}/api/decrypt",
+            data=dec_body,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(unauth_dec_req)
+        self.assertEqual(ctx.exception.code, 400)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 

@@ -10,16 +10,139 @@ import os
 import re
 from typing import Dict, List, Optional, Tuple
 
+import hashlib
+import secrets
+
 DEFAULT_STORAGE_DIR = os.getenv("STORAGE_DIR", os.path.join(os.path.dirname(__file__), "data", "vault"))
+DEFAULT_USERS_DIR = os.getenv("USERS_DIR", os.path.join(os.path.dirname(__file__), "data", "users"))
 
 # Validator for alphanumeric storage codes (standard: 16 chars, flexible 8-32 chars)
 CODE_PATTERN = re.compile(r"^[a-zA-Z0-9]{8,32}$")
+USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]{3,32}$")
 
 
 def ensure_storage_dir(storage_dir: str = DEFAULT_STORAGE_DIR) -> str:
     """Ensure that the storage directory exists and return its path."""
     os.makedirs(storage_dir, exist_ok=True)
     return storage_dir
+
+
+def ensure_users_dir(users_dir: str = DEFAULT_USERS_DIR) -> str:
+    """Ensure that the users directory exists and return its path."""
+    os.makedirs(users_dir, exist_ok=True)
+    return users_dir
+
+
+def validate_username(username: str) -> bool:
+    """Validate username format (3-32 chars, alphanumeric and _.-)."""
+    if not isinstance(username, str):
+        return False
+    return bool(USERNAME_PATTERN.match(username.strip()))
+
+
+def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
+    """
+    Securely hash a password using PBKDF2-HMAC-SHA256 with 100,000 iterations.
+    Returns (hash_hex, salt_hex).
+    """
+    if salt is None:
+        salt_bytes = secrets.token_bytes(16)
+        salt_hex = salt_bytes.hex()
+    else:
+        salt_bytes = bytes.fromhex(salt)
+        salt_hex = salt
+
+    pwd_hash = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt_bytes, 100_000
+    ).hex()
+    return pwd_hash, salt_hex
+
+
+def get_user_file_path(username: str, users_dir: str = DEFAULT_USERS_DIR) -> str:
+    """Get the file path for a user record."""
+    clean_user = username.strip().lower()
+    if not validate_username(clean_user):
+        raise ValueError(f"Invalid username '{username}'. Must be 3-32 alphanumeric characters.")
+    return os.path.join(users_dir, f"{clean_user}.json")
+
+
+def user_exists(username: str, users_dir: str = DEFAULT_USERS_DIR) -> bool:
+    """Check if a user account already exists."""
+    try:
+        path = get_user_file_path(username, users_dir)
+        return os.path.isfile(path)
+    except ValueError:
+        return False
+
+
+def save_user(username: str, password: str, users_dir: str = DEFAULT_USERS_DIR) -> Dict:
+    """Register and save a new user account."""
+    ensure_users_dir(users_dir)
+    clean_user = username.strip()
+    if not validate_username(clean_user):
+        raise ValueError("Username must be 3-32 characters (letters, digits, '.', '-', '_').")
+    if len(password) < 4:
+        raise ValueError("Password must be at least 4 characters.")
+    if user_exists(clean_user, users_dir):
+        raise ValueError(f"Username '{clean_user}' is already registered.")
+
+    pwd_hash, salt = hash_password(password)
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    user_record = {
+        "username": clean_user,
+        "password_hash": pwd_hash,
+        "salt": salt,
+        "created_at": now_iso,
+        "last_login_at": now_iso,
+    }
+
+    file_path = get_user_file_path(clean_user, users_dir)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(user_record, f, indent=2)
+
+    return {"username": clean_user, "created_at": now_iso}
+
+
+def get_user(username: str, users_dir: str = DEFAULT_USERS_DIR) -> Optional[Dict]:
+    """Load a user account record."""
+    try:
+        file_path = get_user_file_path(username, users_dir)
+    except ValueError:
+        return None
+
+    if not os.path.isfile(file_path):
+        return None
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def verify_user_password(username: str, password: str, users_dir: str = DEFAULT_USERS_DIR) -> bool:
+    """Verify a user's password against stored PBKDF2 hash."""
+    user = get_user(username, users_dir)
+    if not user:
+        return False
+
+    stored_hash = user.get("password_hash")
+    salt = user.get("salt")
+    if not stored_hash or not salt:
+        return False
+
+    calc_hash, _ = hash_password(password, salt)
+    if secrets.compare_digest(stored_hash, calc_hash):
+        # Update last_login_at
+        try:
+            user["last_login_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            file_path = get_user_file_path(username, users_dir)
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(user, f, indent=2)
+        except Exception:
+            pass
+        return True
+    return False
 
 
 def validate_code(code: str) -> bool:
@@ -51,6 +174,7 @@ def save_vault_record(
     encrypted_text: str,
     server_key_b: Optional[str],
     recipient_email: Optional[str] = None,
+    owner_username: Optional[str] = None,
     device_id: Optional[str] = None,
     mode: str = "normal",
     inactivity_days: int = 30,
@@ -59,7 +183,7 @@ def save_vault_record(
 ) -> str:
     """
     Save a new vault record with ciphertext, server key (Key B), recipient email,
-    device binding ID, inactivity timeout days, and initial activity timestamp.
+    owner username, device binding ID, inactivity timeout days, and initial activity timestamp.
     """
     ensure_storage_dir(storage_dir)
     file_path = get_file_path(code, storage_dir)
@@ -74,12 +198,14 @@ def save_vault_record(
         "auto_inherit": is_auto,
         "encrypted_text": encrypted_text.strip(),
         "server_key_b": server_key_b,
+        "owner_username": owner_username.strip() if owner_username else None,
         "device_id": device_id.strip() if device_id else None,
         "recipient_email": recipient_email.strip() if recipient_email else None,
         "inactivity_days": final_days,
         "created_at": now_iso,
         "last_active_at": now_iso,
         "inherited_at": None,
+        "killed_at": None,
     }
 
     with open(file_path, "w", encoding="utf-8") as f:
@@ -415,4 +541,53 @@ def get_all_vault_statuses(
         )
     )
     return statuses
+
+
+def touch_user_vaults(username: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> int:
+    """Update last_active_at timestamp for all normal mode records owned by a user."""
+    ensure_storage_dir(storage_dir)
+    touched_count = 0
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    clean_user = username.strip().lower()
+
+    for filename in os.listdir(storage_dir):
+        if not filename.endswith(".json"):
+            continue
+        file_path = os.path.join(storage_dir, filename)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                record = json.load(f)
+
+            if record.get("mode") == "normal" and record.get("owner_username", "").lower() == clean_user:
+                record["last_active_at"] = now_iso
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(record, f, indent=2)
+                touched_count += 1
+        except Exception:
+            continue
+
+    return touched_count
+
+
+def get_user_vaults(
+    username: str, inactivity_days: int = 30, storage_dir: str = DEFAULT_STORAGE_DIR
+) -> List[Dict]:
+    """
+    Get all vault records owned by a specific user with status and countdown details.
+    """
+    ensure_storage_dir(storage_dir)
+    clean_user = username.strip().lower()
+    all_statuses = get_all_vault_statuses(inactivity_days=inactivity_days, storage_dir=storage_dir)
+    user_vaults = []
+
+    for status in all_statuses:
+        record = load_vault_record(status["code"], storage_dir)
+        if record and (record.get("owner_username") or "").lower() == clean_user:
+            user_vaults.append({
+                **status,
+                "owner_username": record.get("owner_username"),
+            })
+
+    return user_vaults
+
 

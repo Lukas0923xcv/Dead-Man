@@ -12,6 +12,7 @@ import argparse
 import datetime
 import json
 import os
+import secrets
 import signal
 import ssl
 import sys
@@ -19,7 +20,7 @@ import threading
 import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from code_generator import (
@@ -861,6 +862,236 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: none;
     }
 
+    /* Auth Navigation Controls */
+    .nav-auth-section {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 4px;
+    }
+    .btn-auth-nav {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-auth-nav:hover {
+      background: var(--card-hover);
+      color: var(--text-bright);
+      border-color: var(--text-muted);
+    }
+    .btn-auth-nav.primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: transparent;
+    }
+    .btn-auth-nav.primary:hover {
+      opacity: 0.9;
+    }
+    .user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+    .user-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    /* Auth Modal & Tabs */
+    .auth-tabs {
+      display: flex;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 16px;
+      gap: 3px;
+    }
+    .auth-tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .auth-tab-btn.active {
+      background: var(--card-bg);
+      color: var(--text-bright);
+      box-shadow: var(--shadow);
+    }
+    .auth-switch-link {
+      display: block;
+      text-align: center;
+      font-size: 12px;
+      color: var(--accent);
+      margin-top: 14px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .auth-switch-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Auth Guard Card */
+    .guard-card {
+      text-align: center;
+      padding: 32px 20px;
+    }
+    .guard-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+    .guard-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 6px;
+    }
+    .guard-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      max-width: 400px;
+      margin: 0 auto 18px;
+      line-height: 1.45;
+    }
+
+    /* User Vaults List & Cards */
+    .vaults-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .vault-count-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 4px;
+    }
+    .vaults-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .vault-item-card {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 14px;
+      transition: all 0.15s ease;
+    }
+    .vault-item-card:hover {
+      border-color: var(--text-muted);
+    }
+    .vault-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .vault-code-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: 0.04em;
+    }
+    .status-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .status-pill.active {
+      background: rgba(46, 160, 67, 0.15);
+      color: #2ea043;
+      border: 1px solid rgba(46, 160, 67, 0.3);
+    }
+    .status-pill.inherited {
+      background: rgba(210, 153, 34, 0.15);
+      color: #d29922;
+      border: 1px solid rgba(210, 153, 34, 0.3);
+    }
+    .status-pill.stopped {
+      background: rgba(248, 81, 73, 0.15);
+      color: #f85149;
+      border: 1px solid rgba(248, 81, 73, 0.3);
+    }
+    .vault-meta-row {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .vault-meta-item strong {
+      color: var(--text);
+    }
+    .vault-actions-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-vault-action {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .btn-vault-action:hover {
+      background: var(--card-hover);
+      color: var(--text-bright);
+      border-color: var(--text-muted);
+    }
+    .btn-vault-action.primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: transparent;
+    }
+    .btn-vault-action.danger {
+      color: var(--danger, #f85149);
+    }
+    .btn-vault-action.danger:hover {
+      background: rgba(248, 81, 73, 0.1);
+      border-color: rgba(248, 81, 73, 0.4);
+    }
+
     footer {
       text-align: center;
       font-size: 11.5px;
@@ -888,6 +1119,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <button class="nav-link-btn" id="nav-btn-home" onclick="navigateTo('home')" data-i18n="nav_overview">Übersicht</button>
         <button class="nav-link-btn" id="nav-btn-app" onclick="navigateTo('app', 'encrypt')" data-i18n="nav_encrypt">Verschlüsseln</button>
         <button class="nav-link-btn" onclick="navigateTo('app', 'decrypt')" data-i18n="nav_decrypt">Entschlüsseln</button>
+        <button class="nav-link-btn" id="nav-btn-vaults" onclick="navigateTo('app', 'vaults')" style="display: none;" data-i18n="nav_vaults">Meine Tresore</button>
         <button class="nav-link-btn" onclick="openInfoModal()" data-i18n="nav_info">Info</button>
         
         <!-- Language Switcher (DE base) -->
@@ -902,6 +1134,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         </button>
+
+        <!-- Auth Controls (Login / Register / User Badge) -->
+        <div class="nav-auth-section" id="nav-auth-logged-out">
+          <button class="btn-auth-nav" onclick="openAuthModal('login')" data-i18n="nav_login">Anmelden</button>
+          <button class="btn-auth-nav primary" onclick="openAuthModal('register')" data-i18n="nav_register">Registrieren</button>
+        </div>
+        <div class="nav-auth-section" id="nav-auth-logged-in" style="display: none;">
+          <div class="user-badge" id="nav-user-badge">
+            <span class="user-dot"></span>
+            <span id="nav-username">User</span>
+          </div>
+          <button class="btn-auth-nav" onclick="handleLogout()" data-i18n="nav_logout">Abmelden</button>
+        </div>
       </div>
     </header>
 
@@ -1047,7 +1292,56 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <!-- =====================================================================
-         VAULT SUBPAGE VIEW (ENCRYPT, DECRYPT, INHERIT)
+         AUTHENTICATION MODAL (LOGIN & REGISTER)
+         ===================================================================== -->
+    <div id="auth-modal" class="modal-overlay" onclick="closeAuthModalOnBackdrop(event)">
+      <div class="modal-container" style="max-width: 420px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span id="auth-modal-title" data-i18n="auth_modal_title_login">Bei SecureVault anmelden</span>
+          </div>
+          <button class="modal-close-btn" onclick="closeAuthModal()" title="Schliessen">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="auth-tabs">
+            <button class="auth-tab-btn active" id="auth-tab-login" onclick="switchAuthMode('login')" data-i18n="auth_tab_login">Anmelden</button>
+            <button class="auth-tab-btn" id="auth-tab-register" onclick="switchAuthMode('register')" data-i18n="auth_tab_register">Registrieren</button>
+          </div>
+
+          <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+            <div class="form-group">
+              <label for="auth-username" data-i18n="auth_label_username">Benutzername</label>
+              <input type="text" id="auth-username" required placeholder="z.B. max_muster" autocomplete="username">
+            </div>
+
+            <div class="form-group">
+              <label for="auth-password" data-i18n="auth_label_password">Passwort</label>
+              <input type="password" id="auth-password" required placeholder="••••••••" autocomplete="current-password">
+            </div>
+
+            <div class="form-group" id="auth-confirm-group" style="display: none;">
+              <label for="auth-password-confirm" data-i18n="auth_label_password_confirm">Passwort bestätigen</label>
+              <input type="password" id="auth-password-confirm" placeholder="••••••••" autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="btn-main" id="auth-submit-btn" style="margin-top: 8px;" data-i18n="auth_btn_login">Anmelden</button>
+
+            <div id="auth-error" class="alert alert-error" style="margin-top: 12px;"></div>
+            <div id="auth-success" class="alert alert-success" style="margin-top: 12px; display: none;"></div>
+
+            <a class="auth-switch-link" id="auth-toggle-link" onclick="toggleAuthMode()" data-i18n="auth_toggle_to_register">Noch kein Konto? Jetzt registrieren →</a>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         VAULT SUBPAGE VIEW (ENCRYPT, DECRYPT, INHERIT, MY VAULTS)
          ===================================================================== -->
     <div id="view-app">
       
@@ -1056,85 +1350,97 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <button class="tab-btn active" id="tab-btn-encrypt" onclick="switchTab('encrypt')" data-i18n="tab_encrypt">Verschlüsseln</button>
         <button class="tab-btn" id="tab-btn-decrypt" onclick="switchTab('decrypt')" data-i18n="tab_decrypt">Entschlüsseln</button>
         <button class="tab-btn" id="tab-btn-inherit" onclick="switchTab('inherit')" data-i18n="tab_inherit">Vererbung</button>
+        <button class="tab-btn" id="tab-btn-vaults" onclick="switchTab('vaults')" style="display: none;" data-i18n="nav_vaults">Meine Tresore</button>
       </nav>
 
       <!-- 1. ENCRYPT PANEL -->
       <div id="tab-encrypt" class="card">
-        <div class="card-header">
-          <div class="card-title" data-i18n="enc_title">Daten & Dateien verschlüsseln</div>
-          <div class="card-subtitle" data-i18n="enc_subtitle">Verschlüsselt mit Dual-Key-Split. Der Server kann Dateien oder Texte nicht lesen.</div>
+        <!-- Auth Guard if Logged Out -->
+        <div id="auth-guard-encrypt" class="guard-card" style="display: none;">
+          <div class="guard-icon">🔐</div>
+          <div class="guard-title" data-i18n="auth_guard_title">Anmeldung erforderlich</div>
+          <div class="guard-desc" data-i18n="auth_guard_desc">Um vertrauliche Daten und Dateien zu verschlüsseln oder Ihre gespeicherten Tresore einzusehen, müssen Sie angemeldet sein.</div>
+          <button class="btn-main" style="max-width: 260px; margin: 0 auto;" onclick="openAuthModal('login')" data-i18n="auth_guard_btn">Jetzt anmelden / registrieren</button>
         </div>
 
-        <div class="form-group">
-          <label for="plaintext"><span data-i18n="enc_label_text">Geheime Notizen / Information</span> <span class="hint" data-i18n="enc_hint_text">(Optional bei Dateianhang)</span></label>
-          <textarea id="plaintext" data-i18n-placeholder="enc_ph_text" placeholder="Vertrauliche Notizen, Passwörter oder Anweisungen eingeben..."></textarea>
-        </div>
-
-        <!-- File Attachment Zone -->
-        <div class="form-group">
-          <label><span data-i18n="enc_label_file">Datei anhängen</span> <span class="hint" data-i18n="enc_hint_file">(Optional — vollständig durch Schlüssel verschlüsselt)</span></label>
-          <input type="file" id="file-input" style="display: none;" onchange="handleFileSelected(event)">
-          
-          <div class="file-dropzone" id="file-dropzone" onclick="document.getElementById('file-input').click()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-            </svg>
-            <div class="file-dropzone-text" data-i18n="dropzone_text">Klicken zum Auswählen oder Datei hierher ziehen</div>
-            <div class="file-dropzone-hint" data-i18n="dropzone_hint">Dokumente, PDFs, Bilder, Archive — jedes Dateiformat</div>
+        <!-- Encrypt Form Container (visible when logged in) -->
+        <div id="enc-form-container">
+          <div class="card-header">
+            <div class="card-title" data-i18n="enc_title">Daten & Dateien verschlüsseln</div>
+            <div class="card-subtitle" data-i18n="enc_subtitle">Verschlüsselt mit Dual-Key-Split. Der Server kann Dateien oder Texte nicht lesen.</div>
           </div>
 
-          <div class="attached-file-pill" id="attached-file-pill">
-            <div class="attached-file-info">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
+          <div class="form-group">
+            <label for="plaintext"><span data-i18n="enc_label_text">Geheime Notizen / Information</span> <span class="hint" data-i18n="enc_hint_text">(Optional bei Dateianhang)</span></label>
+            <textarea id="plaintext" data-i18n-placeholder="enc_ph_text" placeholder="Vertrauliche Notizen, Passwörter oder Anweisungen eingeben..."></textarea>
+          </div>
+
+          <!-- File Attachment Zone -->
+          <div class="form-group">
+            <label><span data-i18n="enc_label_file">Datei anhängen</span> <span class="hint" data-i18n="enc_hint_file">(Optional — vollständig durch Schlüssel verschlüsselt)</span></label>
+            <input type="file" id="file-input" style="display: none;" onchange="handleFileSelected(event)">
+            
+            <div class="file-dropzone" id="file-dropzone" onclick="document.getElementById('file-input').click()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
               </svg>
-              <div>
-                <div class="attached-file-name" id="attached-file-name">filename.pdf</div>
-                <div class="attached-file-size" id="attached-file-size">0 KB</div>
+              <div class="file-dropzone-text" data-i18n="dropzone_text">Klicken zum Auswählen oder Datei hierher ziehen</div>
+              <div class="file-dropzone-hint" data-i18n="dropzone_hint">Dokumente, PDFs, Bilder, Archive — jedes Dateiformat</div>
+            </div>
+
+            <div class="attached-file-pill" id="attached-file-pill">
+              <div class="attached-file-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <div>
+                  <div class="attached-file-name" id="attached-file-name">filename.pdf</div>
+                  <div class="attached-file-size" id="attached-file-size">0 KB</div>
+                </div>
               </div>
+              <button type="button" class="remove-file-btn" onclick="removeAttachedFile()" title="Remove file">✕</button>
             </div>
-            <button type="button" class="remove-file-btn" onclick="removeAttachedFile()" title="Remove file">✕</button>
-          </div>
-        </div>
-
-        <div class="form-group" id="recipient-email-group">
-          <label for="recipient-email">
-            <span data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</span> <span style="color: var(--danger, #f85149); font-weight: 700;">*</span>
-          </label>
-          <input type="email" id="recipient-email" placeholder="recipient@example.com" required>
-          <div id="enc-email-warning-box" style="margin-top: 6px; font-size: 12px; line-height: 1.45; color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 6px;">
-            <span style="font-size: 14px; line-height: 1;">⚠️</span>
-            <span id="enc-email-warning-text" data-i18n="enc_email_warning"><strong>Dead-Man-Switch-System:</strong> Wir sind kein Cloud-Speicher. Jeder Eintrag ist an einen 30-Tage-Inaktivitätstimer gebunden. Bei Auslösung wird Schlüssel B an diesen Empfänger gesendet und 30 Tage danach werden alle Daten unwiderruflich gelöscht.</span>
-          </div>
-        </div>
-
-        <button class="btn-main" onclick="handleEncrypt()" data-i18n="btn_encrypt_save">Verschlüsseln & Speichern</button>
-
-        <div id="enc-error" class="alert alert-error" style="margin-top: 14px;"></div>
-
-        <div id="enc-results" class="result-box">
-          <div class="alert alert-success">
-            <div data-i18n="enc_success">Erfolgreich gespeichert. Auf diesem Gerät benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.</div>
           </div>
 
-          <div class="item-card">
-            <div class="item-header">
-              <span class="item-label" data-i18n="label_storage_code">Speichercode</span>
-              <button class="btn-copy" onclick="copyText('res-code', this)" data-i18n="btn_copy">Kopieren</button>
+          <div class="form-group" id="recipient-email-group">
+            <label for="recipient-email">
+              <span data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</span> <span style="color: var(--danger, #f85149); font-weight: 700;">*</span>
+            </label>
+            <input type="email" id="recipient-email" placeholder="recipient@example.com" required>
+            <div id="enc-email-warning-box" style="margin-top: 6px; font-size: 12px; line-height: 1.45; color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 6px;">
+              <span style="font-size: 14px; line-height: 1;">⚠️</span>
+              <span id="enc-email-warning-text" data-i18n="enc_email_warning"><strong>Kryptographische Nachlass-Übergabe:</strong> Nach 30 Tagen Inaktivität wird Schlüssel B an diesen Empfänger gesendet. Das Abruffrontfenster beträgt anschließend 30 Tage, bevor alle Daten aus Datenschutzgründen unwiderruflich gelöscht werden.</span>
             </div>
-            <div id="res-code" class="item-code large"></div>
           </div>
 
-          <div class="item-card">
-            <div class="item-header">
-              <span class="item-label" data-i18n="label_key_a">Ihr privater Schlüssel A</span>
-              <button class="btn-copy" onclick="copyText('res-key-a', this)" data-i18n="btn_copy">Kopieren</button>
+          <button class="btn-main" onclick="handleEncrypt()" data-i18n="btn_encrypt_save">Verschlüsseln & Speichern</button>
+
+          <div id="enc-error" class="alert alert-error" style="margin-top: 14px;"></div>
+
+          <div id="enc-results" class="result-box">
+            <div class="alert alert-success">
+              <div data-i18n="enc_success">Erfolgreich gespeichert. Auf diesem Gerät benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.</div>
             </div>
-            <div id="res-key-a" class="item-code"></div>
-          </div>
 
-          <div id="res-email-info" class="alert alert-success" style="display: none; margin-top: 8px;"></div>
+            <div class="item-card">
+              <div class="item-header">
+                <span class="item-label" data-i18n="label_storage_code">Speichercode</span>
+                <button class="btn-copy" onclick="copyText('res-code', this)" data-i18n="btn_copy">Kopieren</button>
+              </div>
+              <div id="res-code" class="item-code large"></div>
+            </div>
+
+            <div class="item-card">
+              <div class="item-header">
+                <span class="item-label" data-i18n="label_key_a">Ihr privater Schlüssel A</span>
+                <button class="btn-copy" onclick="copyText('res-key-a', this)" data-i18n="btn_copy">Kopieren</button>
+              </div>
+              <div id="res-key-a" class="item-code"></div>
+            </div>
+
+            <div id="res-email-info" class="alert alert-success" style="display: none; margin-top: 8px;"></div>
+          </div>
         </div>
       </div>
 
@@ -1156,8 +1462,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <div class="form-group">
-          <label for="dec-key-b"><span data-i18n="dec_label_key_b">Schlüssel B</span> <span class="hint" data-i18n="dec_hint_key_b">(Nur auf Zweitgeräten oder im Nachlassmodus nötig)</span></label>
-          <input type="text" id="dec-key-b" data-i18n-placeholder="dec_ph_key_b" placeholder="Auf dem Originalgerät leer lassen...">
+          <label for="dec-key-b"><span data-i18n="dec_label_key_b">Schlüssel B</span> <span class="hint" data-i18n="dec_hint_key_b">(Nur nötig, wenn nicht als Eigentümer eingeloggt oder nach Nachlass)</span></label>
+          <input type="text" id="dec-key-b" data-i18n-placeholder="dec_ph_key_b" placeholder="Auf eigenem Konto leer lassen...">
         </div>
 
         <button class="btn-main" onclick="handleDecrypt()" data-i18n="btn_decrypt">Entschlüsseln</button>
@@ -1207,7 +1513,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <div class="alert alert-warning">
-          <div data-i18n="inh_warning"><strong>Automatischer & Manueller Schutz:</strong> Wenn Sie die Seite 30 Tage lang nicht besuchen, wird Schlüssel B automatisch an den Empfänger gesendet. Sie können die Übergabe hier auch jederzeit sofort manuell ausführen.</div>
+          <div data-i18n="inh_warning"><strong>Automatisierte Notfallübergabe:</strong> Erfolgt 30 Tage lang keine Aktivität, wird Schlüssel B an den hinterlegten Empfänger übermittelt. Nach erfolgter Übergabe oder Trennung der Verbindung verbleiben 30 Tage zum Abruf, bevor alle Daten unwiderruflich gelöscht werden.</div>
         </div>
 
         <div class="form-group">
@@ -1243,6 +1549,39 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
       </div>
+
+      <!-- 4. MY VAULTS PANEL -->
+      <div id="tab-vaults" class="card" style="display: none;">
+        <div class="card-header vaults-header-bar">
+          <div>
+            <div class="card-title" data-i18n="vaults_title">Meine Tresore & Verwahrungen</div>
+            <div class="card-subtitle" data-i18n="vaults_subtitle">Übersicht aller von Ihrem Konto verschlüsselten Dateien, Texte und Nachlässe.</div>
+          </div>
+          <button class="btn-auth-nav" onclick="loadUserVaults()" title="Aktualisieren">↻ <span data-i18n="vaults_refresh">Aktualisieren</span></button>
+        </div>
+
+        <!-- Auth Guard if Logged Out -->
+        <div id="auth-guard-vaults" class="guard-card" style="display: none;">
+          <div class="guard-icon">🔐</div>
+          <div class="guard-title" data-i18n="auth_guard_title">Anmeldung erforderlich</div>
+          <div class="guard-desc" data-i18n="auth_guard_desc">Um Ihre gespeicherten Tresore einzusehen, müssen Sie angemeldet sein.</div>
+          <button class="btn-main" style="max-width: 260px; margin: 0 auto;" onclick="openAuthModal('login')" data-i18n="auth_guard_btn">Jetzt anmelden / registrieren</button>
+        </div>
+
+        <!-- Content Box (visible when logged in) -->
+        <div id="vaults-content-box">
+          <div id="vaults-loading" style="text-align: center; padding: 24px; color: var(--text-muted);">
+            Lade Ihre Tresore...
+          </div>
+          <div id="vaults-empty" style="display: none; text-align: center; padding: 28px 16px; color: var(--text-muted);">
+            <div style="font-size: 28px; margin-bottom: 8px;">📂</div>
+            <div style="font-size: 13px; font-weight: 600;" data-i18n="vaults_empty">Sie haben aktuell noch keine Daten verschlüsselt.</div>
+            <button class="btn-main" style="margin-top: 14px; max-width: 240px; margin-left: auto; margin-right: auto;" onclick="switchTab('encrypt')" data-i18n="vaults_btn_encrypt_now">Jetzt ersten Tresor erstellen</button>
+          </div>
+          <div id="user-vaults-list" class="vaults-list" style="display: none;"></div>
+        </div>
+      </div>
+
     </div>
 
     <footer>
@@ -1256,7 +1595,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         nav_overview: "Übersicht",
         nav_encrypt: "Verschlüsseln",
         nav_decrypt: "Entschlüsseln",
+        nav_inherit: "Vererbung",
+        nav_vaults: "Meine Tresore",
         nav_info: "Info",
+        nav_login: "Anmelden",
+        nav_register: "Registrieren",
+        nav_logout: "Abmelden",
         
         hero_title: "Zero-Knowledge Tresor & Kryptographischer Nachlass",
         hero_desc: "Sichere Verwahrung vertraulicher Dokumente und digitaler Nachlässe. SecureVault ist auf die zeitgesteuerte Notfallübergabe ausgelegt: 30 Tage nach Freigabe des Schlüssels an den Empfänger wird der Datensatz aus Sicherheitsgründen vollständig und unwiderruflich gelöscht.",
@@ -1283,8 +1627,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         feat1_title: "Dual-Key Split (256-Bit)",
         feat1_desc: "Jeder Datensatz wird in zwei kryptographische Teilschlüssel (A & B) aufgeteilt. Nur die Kombination beider Schlüssel ermöglicht die Entschlüsselung.",
-        feat2_title: "Gerätegebundene Primärnutzung",
-        feat2_desc: "Auf Ihrem autorisierten Hauptgerät wird Schlüssel B automatisch angewendet. Sie benötigen zur Entschlüsselung lediglich Ihren Speichercode und Schlüssel A.",
+        feat2_title: "Kontogebundene Primärnutzung",
+        feat2_desc: "Auf Ihrem autorisierten Benutzerkonto wird Schlüssel B automatisch angewendet. Sie benötigen zur Entschlüsselung lediglich Ihren Speichercode und Schlüssel A.",
         feat3_title: "30-Tage Inaktivitäts-Nachlass & Automatische Löschung",
         feat3_desc: "Erfolgt 30 Tage lang keine Aktivität, wird Schlüssel B automatisch an den hinterlegten Empfänger übermittelt. Zum Schutz der Privatsphäre werden alle verschlüsselten Daten 30 Tage nach der Übergabe unwiderruflich vom Server entfernt.",
         feat4_title: "Verschlüsselte Dateianhänge",
@@ -1307,6 +1651,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         tab_decrypt: "Entschlüsseln",
         tab_inherit: "Vererbung",
         
+        auth_modal_title_login: "Bei SecureVault anmelden",
+        auth_modal_title_register: "Neues Konto erstellen",
+        auth_tab_login: "Anmelden",
+        auth_tab_register: "Registrieren",
+        auth_label_username: "Benutzername",
+        auth_ph_username: "z.B. max_muster",
+        auth_label_password: "Passwort",
+        auth_ph_password: "••••••••",
+        auth_label_password_confirm: "Passwort bestätigen",
+        auth_btn_login: "Anmelden",
+        auth_btn_register: "Konto erstellen",
+        auth_toggle_to_register: "Noch kein Konto? Jetzt registrieren →",
+        auth_toggle_to_login: "Bereits registriert? Jetzt anmelden →",
+        auth_guard_title: "Anmeldung erforderlich",
+        auth_guard_desc: "Um vertrauliche Daten und Dateien zu verschlüsseln oder Ihre gespeicherten Tresore einzusehen, müssen Sie angemeldet sein.",
+        auth_guard_btn: "Jetzt anmelden / registrieren",
+        
+        vaults_title: "Meine Tresore & Verwahrungen",
+        vaults_subtitle: "Übersicht aller von Ihrem Konto verschlüsselten Dateien, Texte und Nachlässe.",
+        vaults_empty: "Sie haben aktuell noch keine Daten verschlüsselt.",
+        vaults_btn_encrypt_now: "Jetzt ersten Tresor erstellen",
+        vaults_refresh: "Aktualisieren",
+        
         enc_title: "Daten & Dokumente verschlüsseln",
         enc_subtitle: "Zero-Knowledge Dual-Key-Split. Der Server hat keinerlei Zugriff auf Ihre Inhalte.",
         enc_label_text: "Vertrauliche Notizen / Daten",
@@ -1319,7 +1686,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_label_email: "Empfänger-E-Mail für Notfallübergabe (Pflichtfeld)",
         enc_email_warning: "<strong>Kryptographische Nachlass-Übergabe:</strong> Nach 30 Tagen Inaktivität wird Schlüssel B an diesen Empfänger gesendet. Das Abruffrontfenster beträgt anschließend 30 Tage, bevor alle Daten aus Datenschutzgründen unwiderruflich gelöscht werden.",
         btn_encrypt_save: "Verschlüsseln & Speichern",
-        enc_success: "Erfolgreich gespeichert. Auf diesem Gerät benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.",
+        enc_success: "Erfolgreich gespeichert. Auf Ihrem Konto benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.",
         label_storage_code: "Speichercode",
         label_key_a: "Ihr privater Schlüssel A",
         
@@ -1330,8 +1697,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         dec_label_key_a: "Schlüssel A",
         dec_ph_key_a: "Schlüssel A einfügen...",
         dec_label_key_b: "Schlüssel B",
-        dec_hint_key_b: "(Nur auf Fremdgeräten oder nach Nachlassübergabe nötig)",
-        dec_ph_key_b: "Auf dem Originalgerät leer lassen...",
+        dec_hint_key_b: "(Nur nötig, wenn nicht als Eigentümer eingeloggt oder nach Nachlass)",
+        dec_ph_key_b: "Auf eigenem Konto leer lassen...",
         btn_decrypt: "Entschlüsseln",
         btn_download_file: "Datei herunterladen",
         label_dec_text: "Entschlüsselter Text",
@@ -1353,13 +1720,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         err_fill_payload: "Bitte Text eingeben oder eine Datei anhängen.",
         err_code_key_req: "Sowohl der Speichercode sowie Schlüssel A sind erforderlich.",
         err_code_req: "Bitte den 16-stelligen Speichercode eingeben.",
-        err_email_req: "Bitte eine gültige Empfänger-E-Mail-Adresse eingeben (Pflichtfeld zur Notfallübergabe)."
+        err_email_req: "Bitte eine gültige Empfänger-E-Mail-Adresse eingeben (Pflichtfeld zur Notfallübergabe).",
+        err_pwd_mismatch: "Die Passwörter stimmen nicht überein."
       },
       en: {
         nav_overview: "Overview",
         nav_encrypt: "Encrypt",
         nav_decrypt: "Decrypt",
+        nav_inherit: "Inheritance",
+        nav_vaults: "My Vaults",
         nav_info: "Info",
+        nav_login: "Sign In",
+        nav_register: "Register",
+        nav_logout: "Sign Out",
         
         hero_title: "Zero-Knowledge Digital Vault & Dead Man's Switch",
         hero_desc: "Cryptographic emergency custody for confidential files and digital inheritances. SecureVault is engineered for automated emergency handover: all encrypted data is permanently purged 30 days following key release.",
@@ -1386,8 +1759,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         feat1_title: "Dual-Key Split (256-Bit)",
         feat1_desc: "Every record is partitioned into two cryptographic key shares (A & B). Only their combination unlocks the original data.",
-        feat2_title: "Device-Bound Normal Mode",
-        feat2_desc: "On your authorized primary device, Key B is auto-applied seamlessly. You only need your Storage Code and Key A to decrypt.",
+        feat2_title: "Account-Bound Seamless Decryption",
+        feat2_desc: "On your authenticated account, Key B is auto-applied seamlessly. You only need your Storage Code and Key A to decrypt.",
         feat3_title: "30-Day Inactivity Switch & 30-Day Auto-Purge",
         feat3_desc: "If no owner activity is registered for 30 days, Key B is automatically dispatched to the designated recipient. To safeguard privacy, all encrypted data is permanently deleted 30 days after handover.",
         feat4_title: "Encrypted File Attachments",
@@ -1410,6 +1783,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         tab_decrypt: "Decrypt",
         tab_inherit: "Inheritance",
         
+        auth_modal_title_login: "Sign in to SecureVault",
+        auth_modal_title_register: "Create a Secure Account",
+        auth_tab_login: "Sign In",
+        auth_tab_register: "Register",
+        auth_label_username: "Username",
+        auth_ph_username: "e.g. alice",
+        auth_label_password: "Password",
+        auth_ph_password: "••••••••",
+        auth_label_password_confirm: "Confirm Password",
+        auth_btn_login: "Sign In",
+        auth_btn_register: "Create Account",
+        auth_toggle_to_register: "Don't have an account? Register now →",
+        auth_toggle_to_login: "Already have an account? Sign in →",
+        auth_guard_title: "Authentication Required",
+        auth_guard_desc: "Please sign in or register to encrypt new data and view your personal vaults.",
+        auth_guard_btn: "Sign In / Register",
+        
+        vaults_title: "My Vaults & Records",
+        vaults_subtitle: "Complete overview of all encrypted files, notes, and handovers stored under your account.",
+        vaults_empty: "You have not encrypted any records yet.",
+        vaults_btn_encrypt_now: "Create First Vault",
+        vaults_refresh: "Refresh",
+        
         enc_title: "Encrypt Data & Documents",
         enc_subtitle: "Client-side Dual-Key Split. The server cannot inspect or access your data.",
         enc_label_text: "Confidential Notes / Information",
@@ -1422,7 +1818,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_label_email: "Recipient Email for Emergency Handover (Required)",
         enc_email_warning: "<strong>Cryptographic Inheritance Handover:</strong> After 30 days of inactivity, Key B is automatically dispatched to this recipient. A 30-day retrieval window then commences, after which all data is permanently purged for privacy.",
         btn_encrypt_save: "Encrypt & Save",
-        enc_success: "Saved successfully. On this device, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
+        enc_success: "Saved successfully. Under your account, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
         label_storage_code: "Storage Code",
         label_key_a: "Your Key A",
         
@@ -1433,8 +1829,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         dec_label_key_a: "Key A",
         dec_ph_key_a: "Paste Key A...",
         dec_label_key_b: "Key B",
-        dec_hint_key_b: "(Only needed on other devices or following inheritance handover)",
-        dec_ph_key_b: "Leave empty if on original device...",
+        dec_hint_key_b: "(Only needed if not signed into owner account or following inheritance handover)",
+        dec_ph_key_b: "Leave empty if logged into owner account...",
         btn_decrypt: "Decrypt",
         btn_download_file: "Download File",
         label_dec_text: "Decrypted Text",
@@ -1456,11 +1852,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         err_fill_payload: "Please enter text or attach a file to encrypt.",
         err_code_key_req: "Both the Storage Code and Key A are required.",
         err_code_req: "Please enter the 16-character Storage Code.",
-        err_email_req: "Please enter a valid recipient email address (Required for emergency handover)."
+        err_email_req: "Please enter a valid recipient email address (Required for emergency handover).",
+        err_pwd_mismatch: "Passwords do not match."
       }
     };
 
     let currentLang = 'de';
+    let currentUser = null;
+    let authMode = 'login';
     let selectedFileObject = null;
     let decryptedFileObject = null;
 
@@ -1473,14 +1872,232 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function closeInfoModalOnBackdrop(e) {
-      if (e.target.id === 'info-modal') {
-        closeInfoModal();
+      if (e.target.id === 'info-modal') closeInfoModal();
+    }
+
+    /* Auth Modal Management */
+    function openAuthModal(mode) {
+      switchAuthMode(mode || 'login');
+      document.getElementById('auth-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('auth-username').focus(), 100);
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').style.display = 'none';
+      document.getElementById('auth-error').style.display = 'none';
+      document.getElementById('auth-success').style.display = 'none';
+    }
+
+    function closeAuthModalOnBackdrop(e) {
+      if (e.target.id === 'auth-modal') closeAuthModal();
+    }
+
+    function switchAuthMode(mode) {
+      authMode = mode;
+      const isLogin = mode === 'login';
+      document.getElementById('auth-tab-login').classList.toggle('active', isLogin);
+      document.getElementById('auth-tab-register').classList.toggle('active', !isLogin);
+      document.getElementById('auth-confirm-group').style.display = isLogin ? 'none' : 'block';
+      document.getElementById('auth-modal-title').textContent = isLogin
+        ? (I18N[currentLang].auth_modal_title_login || 'Bei SecureVault anmelden')
+        : (I18N[currentLang].auth_modal_title_register || 'Neues Konto erstellen');
+      document.getElementById('auth-submit-btn').textContent = isLogin
+        ? (I18N[currentLang].auth_btn_login || 'Anmelden')
+        : (I18N[currentLang].auth_btn_register || 'Konto erstellen');
+      document.getElementById('auth-toggle-link').textContent = isLogin
+        ? (I18N[currentLang].auth_toggle_to_register || 'Noch kein Konto? Jetzt registrieren →')
+        : (I18N[currentLang].auth_toggle_to_login || 'Bereits registriert? Jetzt anmelden →');
+      document.getElementById('auth-error').style.display = 'none';
+      document.getElementById('auth-success').style.display = 'none';
+    }
+
+    function toggleAuthMode() {
+      switchAuthMode(authMode === 'login' ? 'register' : 'login');
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('auth-username').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const confirmPwd = document.getElementById('auth-password-confirm').value;
+      const errBox = document.getElementById('auth-error');
+      const succBox = document.getElementById('auth-success');
+      errBox.style.display = 'none';
+      succBox.style.display = 'none';
+
+      if (authMode === 'register' && password !== confirmPwd) {
+        errBox.textContent = I18N[currentLang].err_pwd_mismatch || 'Die Passwörter stimmen nicht überein.';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      const endpoint = authMode === 'register' ? '/api/register' : '/api/login';
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Authentication failed.');
+
+        currentUser = data.username;
+        if (data.token) {
+          localStorage.setItem('sv_auth_token', data.token);
+        }
+        succBox.textContent = data.message || 'Success';
+        succBox.style.display = 'block';
+        setTimeout(() => {
+          closeAuthModal();
+          checkAuthStatus();
+        }, 500);
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
       }
     }
 
-    // Close on Escape key
+    async function handleLogout() {
+      try {
+        await fetch('/api/logout', { method: 'POST' });
+      } catch (e) {}
+      localStorage.removeItem('sv_auth_token');
+      currentUser = null;
+      checkAuthStatus();
+      navigateTo('home');
+    }
+
+    async function checkAuthStatus() {
+      try {
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const res = await fetch('/api/me', { headers });
+        const data = await res.json();
+        if (data.authenticated && data.username) {
+          currentUser = data.username;
+          document.getElementById('nav-auth-logged-out').style.display = 'none';
+          document.getElementById('nav-auth-logged-in').style.display = 'flex';
+          document.getElementById('nav-username').textContent = currentUser;
+          document.getElementById('nav-btn-vaults').style.display = 'inline-flex';
+          document.getElementById('tab-btn-vaults').style.display = 'flex';
+          
+          document.getElementById('auth-guard-encrypt').style.display = 'none';
+          document.getElementById('enc-form-container').style.display = 'block';
+
+          document.getElementById('auth-guard-vaults').style.display = 'none';
+          document.getElementById('vaults-content-box').style.display = 'block';
+        } else {
+          currentUser = null;
+          document.getElementById('nav-auth-logged-out').style.display = 'flex';
+          document.getElementById('nav-auth-logged-in').style.display = 'none';
+          document.getElementById('nav-btn-vaults').style.display = 'none';
+          document.getElementById('tab-btn-vaults').style.display = 'none';
+
+          document.getElementById('auth-guard-encrypt').style.display = 'block';
+          document.getElementById('enc-form-container').style.display = 'none';
+
+          document.getElementById('auth-guard-vaults').style.display = 'block';
+          document.getElementById('vaults-content-box').style.display = 'none';
+        }
+      } catch (e) {
+        currentUser = null;
+      }
+    }
+
+    async function loadUserVaults() {
+      if (!currentUser) return;
+      const loading = document.getElementById('vaults-loading');
+      const emptyBox = document.getElementById('vaults-empty');
+      const list = document.getElementById('user-vaults-list');
+      loading.style.display = 'block';
+      emptyBox.style.display = 'none';
+      list.style.display = 'none';
+
+      try {
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const res = await fetch('/api/my-vaults', { headers });
+        const data = await res.json();
+        loading.style.display = 'none';
+
+        if (!res.ok) throw new Error(data.error || 'Failed to load vaults');
+
+        const vaults = data.vaults || [];
+        document.getElementById('vault-count').textContent = vaults.length;
+
+        if (vaults.length === 0) {
+          emptyBox.style.display = 'block';
+          return;
+        }
+
+        list.innerHTML = '';
+        vaults.forEach(v => {
+          const item = document.createElement('div');
+          item.className = 'vault-item-card';
+
+          let statusClass = 'active';
+          let statusText = currentLang === 'de' ? 'Aktiv (Normal)' : 'Active (Normal)';
+          if (v.mode === 'inherited') {
+            statusClass = 'inherited';
+            statusText = currentLang === 'de' ? 'Nachlass ausgelöst' : 'Inherited Mode';
+          } else if (v.mode === 'stopped') {
+            statusClass = 'stopped';
+            statusText = currentLang === 'de' ? 'Verbindung getrennt' : 'Disconnected';
+          }
+
+          const countdown = v.time_left_formatted || 'N/A';
+          const recipient = v.has_recipient_email ? '✉️ Registriert' : '—';
+
+          item.innerHTML = `
+            <div class="vault-card-top">
+              <span class="vault-code-tag">${v.code}</span>
+              <span class="status-pill ${statusClass}">${statusText}</span>
+            </div>
+            <div class="vault-meta-row">
+              <span class="vault-meta-item">⏱️ <strong>${countdown}</strong></span>
+              <span class="vault-meta-item">📧 <strong>${recipient}</strong></span>
+            </div>
+            <div class="vault-actions-row">
+              <button class="btn-vault-action primary" onclick="openDecryptForCode('${v.code}')">🔓 ${currentLang === 'de' ? 'Entschlüsseln' : 'Decrypt'}</button>
+              <button class="btn-vault-action" onclick="openInheritForCode('${v.code}')">🚀 ${currentLang === 'de' ? 'Nachlass' : 'Inherit'}</button>
+              <button class="btn-vault-action danger" onclick="openStopInheritForCode('${v.code}')">🛑 ${currentLang === 'de' ? 'Trennen' : 'Stop'}</button>
+            </div>
+          `;
+          list.appendChild(item);
+        });
+
+        list.style.display = 'flex';
+      } catch (err) {
+        loading.style.display = 'none';
+        list.innerHTML = `<div class="alert alert-error" style="display:block;">${err.message}</div>`;
+        list.style.display = 'block';
+      }
+    }
+
+    function openDecryptForCode(code) {
+      switchTab('decrypt');
+      document.getElementById('dec-code').value = code;
+      document.getElementById('dec-key-a').focus();
+    }
+
+    function openInheritForCode(code) {
+      switchTab('inherit');
+      document.getElementById('inh-code').value = code;
+      document.getElementById('inh-key-a').focus();
+    }
+
+    function openStopInheritForCode(code) {
+      switchTab('inherit');
+      document.getElementById('inh-code').value = code;
+      document.getElementById('inh-key-a').focus();
+    }
+
+    // Close modals on Escape key
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeInfoModal();
+      if (e.key === 'Escape') {
+        closeInfoModal();
+        closeAuthModal();
+      }
     });
 
     function setLanguage(lang) {
@@ -1508,6 +2125,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           elem.setAttribute('placeholder', I18N[lang][key]);
         }
       });
+
+      if (currentUser && document.getElementById('tab-vaults').style.display === 'block') {
+        loadUserVaults();
+      }
     }
 
     function initLanguage() {
@@ -1530,26 +2151,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function sendHeartbeat() {
-      const devId = getOrCreateDeviceId();
-      if (!devId) return;
+      const token = localStorage.getItem('sv_auth_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
       fetch('/api/heartbeat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device_id: devId })
+        headers: headers,
+        body: JSON.stringify({})
       }).catch(() => {});
     }
 
     // Auto-check URL hash or path on load & send activity heartbeat
     window.addEventListener('DOMContentLoaded', () => {
       initLanguage();
-      sendHeartbeat();
-      const hash = window.location.hash;
-      const path = window.location.pathname;
-      if (hash === '#app' || hash === '#vault' || path === '/app' || path === '/vault') {
-        navigateTo('app');
-      } else {
-        navigateTo('home');
-      }
+      checkAuthStatus().then(() => {
+        sendHeartbeat();
+        const hash = window.location.hash;
+        const path = window.location.pathname;
+        if (hash === '#app' || hash === '#vault' || path === '/app' || path === '/vault') {
+          navigateTo('app');
+        } else {
+          navigateTo('home');
+        }
+      });
     });
 
     // Theme Management (Light mode default)
@@ -1614,45 +2238,41 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     // Drag and drop support
     const dropzone = document.getElementById('file-dropzone');
-    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--border-focus)'; });
-    dropzone.addEventListener('dragleave', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--border-subtle)'; });
-    dropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropzone.style.borderColor = 'var(--border-subtle)';
-      if (e.dataTransfer.files.length) {
-        document.getElementById('file-input').files = e.dataTransfer.files;
-        handleFileSelected({ target: { files: e.dataTransfer.files } });
-      }
-    });
-
-    function getOrCreateDeviceId() {
-      let devId = localStorage.getItem('sv_device_id');
-      if (!devId) {
-        const arr = new Uint8Array(16);
-        if (window.crypto && window.crypto.getRandomValues) {
-          window.crypto.getRandomValues(arr);
-        } else {
-          for (let i = 0; i < 16; i++) arr[i] = Math.floor(Math.random() * 256);
+    if (dropzone) {
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--border-focus)'; });
+      dropzone.addEventListener('dragleave', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--border-subtle)'; });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = 'var(--border-subtle)';
+        if (e.dataTransfer.files.length) {
+          document.getElementById('file-input').files = e.dataTransfer.files;
+          handleFileSelected({ target: { files: e.dataTransfer.files } });
         }
-        devId = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-        localStorage.setItem('sv_device_id', devId);
-      }
-      return devId;
+      });
     }
 
     function switchTab(tabName) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      const targetBtn = document.getElementById('tab-btn-' + tabName) || event.currentTarget;
+      const targetBtn = document.getElementById('tab-btn-' + tabName);
       if (targetBtn) targetBtn.classList.add('active');
       document.getElementById('tab-encrypt').style.display = tabName === 'encrypt' ? 'block' : 'none';
       document.getElementById('tab-decrypt').style.display = tabName === 'decrypt' ? 'block' : 'none';
       document.getElementById('tab-inherit').style.display = tabName === 'inherit' ? 'block' : 'none';
+      document.getElementById('tab-vaults').style.display = tabName === 'vaults' ? 'block' : 'none';
+
+      if (tabName === 'vaults' && currentUser) {
+        loadUserVaults();
+      }
     }
 
     async function handleEncrypt() {
+      if (!currentUser) {
+        openAuthModal('login');
+        return;
+      }
+
       const text = document.getElementById('plaintext').value.trim();
       const recipient_email = document.getElementById('recipient-email').value.trim();
-      const device_id = getOrCreateDeviceId();
       const errBox = document.getElementById('enc-error');
       const resBox = document.getElementById('enc-results');
       errBox.style.display = 'none';
@@ -1672,12 +2292,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
 
       try {
-        const payload = { text, recipient_email, device_id };
+        const payload = { text, recipient_email };
         if (selectedFileObject) payload.file = selectedFileObject;
+
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
 
         const res = await fetch('/api/encrypt', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: headers,
           body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -1704,7 +2328,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const code = document.getElementById('dec-code').value.trim();
       const key_a = document.getElementById('dec-key-a').value.trim();
       const key_b = document.getElementById('dec-key-b').value.trim();
-      const device_id = getOrCreateDeviceId();
       const errBox = document.getElementById('dec-error');
       const resBox = document.getElementById('dec-results');
       errBox.style.display = 'none';
@@ -1717,12 +2340,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
 
       try {
-        const payload = { code, key_a, device_id };
+        const payload = { code, key_a };
         if (key_b) payload.key_b = key_b;
+
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
 
         const res = await fetch('/api/decrypt', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: headers,
           body: JSON.stringify(payload)
         });
 
@@ -1780,6 +2407,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     async function handleInherit() {
       const code = document.getElementById('inh-code').value.trim();
+      const key_a = document.getElementById('inh-key-a').value.trim();
       const errBox = document.getElementById('inh-error');
       const resBox = document.getElementById('inh-results');
       errBox.style.display = 'none';
@@ -1792,10 +2420,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
 
       try {
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
         const res = await fetch('/api/inherit', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code })
+          headers: headers,
+          body: JSON.stringify({ code, key_a })
         });
 
         const data = await res.json();
@@ -1830,7 +2462,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     async function handleStopInheritance() {
       const code = document.getElementById('inh-code').value.trim();
       const key_a = document.getElementById('inh-key-a').value.trim();
-      const device_id = getOrCreateDeviceId();
       const errBox = document.getElementById('inh-error');
       const resBox = document.getElementById('inh-results');
       errBox.style.display = 'none';
@@ -1843,11 +2474,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
 
       try {
-        const payload = { code, key_a, device_id };
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
         const res = await fetch('/api/disable-inheritance', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          headers: headers,
+          body: JSON.stringify({ code, key_a })
         });
 
         const data = await res.json();
@@ -2019,6 +2653,35 @@ def ensure_self_signed_cert(cert_path: str = "cert.pem", key_path: str = "key.pe
         return cert_path, key_path
 
 
+# In-memory session token store: token -> {"username": username, "created_at": iso}
+SESSIONS: Dict[str, Dict] = {}
+
+
+def get_authenticated_user(handler: BaseHTTPRequestHandler) -> Optional[str]:
+    """Extract authenticated username from Authorization header, X-Auth-Token, or cookie."""
+    auth_header = handler.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+        if token in SESSIONS:
+            return SESSIONS[token]["username"]
+
+    x_token = handler.headers.get("X-Auth-Token", "").strip()
+    if x_token and x_token in SESSIONS:
+        return SESSIONS[x_token]["username"]
+
+    cookie_header = handler.headers.get("Cookie", "")
+    if cookie_header:
+        for part in cookie_header.split(";"):
+            if "=" in part:
+                k, v = part.strip().split("=", 1)
+                if k == "sv_session":
+                    token = v.strip()
+                    if token in SESSIONS:
+                        return SESSIONS[token]["username"]
+
+    return None
+
+
 class CodeGenRequestHandler(BaseHTTPRequestHandler):
     """HTTP Request Handler for 256-Bit Split Vault Server."""
 
@@ -2029,7 +2692,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.NO_CONTENT)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept, X-Device-ID")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept, X-Device-ID, Authorization, X-Auth-Token")
         self.end_headers()
 
     def do_GET(self) -> None:
@@ -2048,6 +2711,41 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             self.send_html_response(HTML_TEMPLATE)
             return
 
+        # Route: Current authenticated user session status
+        if path == "/api/me":
+            current_user = get_authenticated_user(self)
+            if current_user:
+                self.send_json_response(HTTPStatus.OK, {
+                    "authenticated": True,
+                    "username": current_user,
+                })
+            else:
+                self.send_json_response(HTTPStatus.OK, {
+                    "authenticated": False,
+                    "username": None,
+                })
+            return
+
+        # Route: List all vaults owned by the logged-in user
+        if path == "/api/my-vaults":
+            current_user = get_authenticated_user(self)
+            if not current_user:
+                self.send_error_response(HTTPStatus.UNAUTHORIZED, "Authentication required. Please log in to view your vaults.")
+                return
+
+            vaults = storage.get_user_vaults(
+                username=current_user,
+                inactivity_days=int(self.server.inactivity_days),
+                storage_dir=self.server.storage_dir,
+            )
+            self.send_json_response(HTTPStatus.OK, {
+                "status": "success",
+                "username": current_user,
+                "vaults": vaults,
+                "count": len(vaults),
+            })
+            return
+
         # Route: Random Code generation
         if path in ("/code", "/api/code"):
             self.handle_code(query_params)
@@ -2061,7 +2759,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
         # 404 Not Found
         self.send_error_response(
             HTTPStatus.NOT_FOUND,
-            f"Endpoint '{self.path}' not found. Available endpoints: /, /app, /code, /api/encrypt, /api/decrypt, /api/inherit, /api/heartbeat, /health",
+            f"Endpoint '{self.path}' not found. Available endpoints: /, /app, /api/me, /api/my-vaults, /api/register, /api/login, /api/logout, /api/encrypt, /api/decrypt, /api/inherit, /api/heartbeat, /health",
         )
 
     def do_POST(self) -> None:
@@ -2079,15 +2777,87 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 self.send_error_response(HTTPStatus.BAD_REQUEST, f"Invalid JSON payload: {e}")
                 return
 
-        # Extract device_id from JSON payload or header
-        device_id = data.get("device_id") or self.headers.get("X-Device-ID") or self.client_address[0]
+        # Route: Register new user account
+        if path == "/api/register":
+            username = (data.get("username") or "").strip()
+            password = data.get("password") or ""
+            if not username or not password:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Username and password are required.")
+                return
+
+            try:
+                user_info = storage.save_user(username, password, self.server.users_dir)
+                token = secrets.token_hex(32)
+                SESSIONS[token] = {
+                    "username": user_info["username"],
+                    "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                }
+                cookie = f"sv_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"
+                self.send_json_response(HTTPStatus.OK, {
+                    "status": "success",
+                    "username": user_info["username"],
+                    "token": token,
+                    "message": f"Account '{user_info['username']}' registered successfully."
+                }, cookies=[cookie])
+            except Exception as e:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))
+            return
+
+        # Route: Login existing user account
+        if path == "/api/login":
+            username = (data.get("username") or "").strip()
+            password = data.get("password") or ""
+            if not username or not password:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Username and password are required.")
+                return
+
+            valid = storage.verify_user_password(username, password, self.server.users_dir)
+            if not valid:
+                self.send_error_response(HTTPStatus.UNAUTHORIZED, "Invalid username or password.")
+                return
+
+            u_rec = storage.get_user(username, self.server.users_dir)
+            display_user = u_rec.get("username") if u_rec else username
+            token = secrets.token_hex(32)
+            SESSIONS[token] = {
+                "username": display_user,
+                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            }
+            cookie = f"sv_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"
+            self.send_json_response(HTTPStatus.OK, {
+                "status": "success",
+                "username": display_user,
+                "token": token,
+                "message": f"Logged in as {display_user}."
+            }, cookies=[cookie])
+            return
+
+        # Route: Logout user session
+        if path == "/api/logout":
+            auth_header = self.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                SESSIONS.pop(auth_header[7:].strip(), None)
+            cookie_header = self.headers.get("Cookie", "")
+            if cookie_header:
+                for part in cookie_header.split(";"):
+                    if "=" in part:
+                        k, v = part.strip().split("=", 1)
+                        if k == "sv_session":
+                            SESSIONS.pop(v.strip(), None)
+            cookie = "sv_session=; Path=/; HttpOnly; Max-Age=0"
+            self.send_json_response(HTTPStatus.OK, {"status": "success", "message": "Logged out successfully."}, cookies=[cookie])
+            return
 
         # Route: Heartbeat / Activity ping (updates last_active_at)
         if path in ("/api/heartbeat", "/api/touch"):
-            updated = storage.touch_device_activity(device_id, self.server.storage_dir)
+            current_user = get_authenticated_user(self)
+            updated = 0
+            if current_user:
+                updated += storage.touch_user_vaults(current_user, self.server.storage_dir)
             code = data.get("code")
             if code:
                 storage.touch_record_activity(str(code), self.server.storage_dir)
+                updated += 1
             self.send_json_response(HTTPStatus.OK, {"status": "ok", "updated_records": updated})
             return
 
@@ -2103,8 +2873,16 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
-        # Route: Encrypt (256-Bit Split AES-GCM with Text and/or File)
+        # Route: Encrypt (256-Bit Split AES-GCM with Text and/or File) - Requires Account Login
         if path == "/api/encrypt":
+            current_user = get_authenticated_user(self)
+            if not current_user:
+                self.send_error_response(
+                    HTTPStatus.UNAUTHORIZED,
+                    "Authentication required. Please log in or register to encrypt and store data."
+                )
+                return
+
             plaintext = data.get("text", "")
             file_obj = data.get("file")
             recipient_email = (data.get("recipient_email") or "").strip()
@@ -2120,7 +2898,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             if not recipient_email or "@" not in recipient_email or "." not in recipient_email.split("@")[-1]:
                 self.send_error_response(
                     HTTPStatus.BAD_REQUEST,
-                    "Recipient email is strictly required. SecureVault is a Dead Man's Switch service, not a cloud storage host. An email address is mandatory for the 30-day inactivity handover."
+                    "Recipient email is strictly required. An email address is mandatory for the 30-day inactivity emergency handover."
                 )
                 return
 
@@ -2149,6 +2927,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     encrypted_text=encrypted_text,
                     server_key_b=key_b,
                     recipient_email=recipient_email,
+                    owner_username=current_user,
                     device_id=device_id,
                     mode="normal",
                     inactivity_days=inactivity_days,
@@ -2163,13 +2942,13 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                         "key_a": key_a,
                         "key_bits": key_bits,
                         "has_file": bool(file_obj),
+                        "owner_username": current_user,
                         "recipient_email": recipient_email.strip() if recipient_email else None,
-                        "device_bound": bool(device_id),
                         "inactivity_days": inactivity_days,
                         "auto_inherit": auto_inherit,
                         "mode": "normal",
                         "algorithm": f"AES-256-GCM ({key_bits}-Bit Split)",
-                        "message": f"Encrypted payload saved in Normal Mode under code '{code}'.",
+                        "message": f"Encrypted payload saved under code '{code}' bound to account '{current_user}'.",
                         "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     },
                 )
@@ -2181,7 +2960,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
         if path in ("/api/disable-inheritance", "/api/stop-inheritance"):
             code = data.get("code")
             key_a = data.get("key_a") or data.get("key")
-            device_id = data.get("device_id")
+            current_user = get_authenticated_user(self)
 
             if not code:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, "Missing 'code' field in JSON payload.")
@@ -2200,10 +2979,13 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 return
 
             server_key_b = record.get("server_key_b")
-            bound_device = record.get("device_id")
+            owner = record.get("owner_username")
+            is_owner = bool(current_user and owner and current_user.lower() == owner.lower())
 
-            # Validate authorization: Key A or original Device Binding
-            if key_a and server_key_b:
+            # Validate authorization: Account ownership OR valid Key A
+            if is_owner:
+                pass
+            elif key_a and server_key_b:
                 try:
                     decrypt_split(
                         record["encrypted_text"],
@@ -2213,12 +2995,9 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 except Exception:
                     self.send_error_response(HTTPStatus.UNAUTHORIZED, "Invalid Key A for this storage code.")
                     return
-            elif bound_device and device_id and bound_device == device_id:
-                pass
             else:
-                if not key_a:
-                    self.send_error_response(HTTPStatus.UNAUTHORIZED, "Key A is required to authenticate stopping auto-inheritance.")
-                    return
+                self.send_error_response(HTTPStatus.UNAUTHORIZED, "Key A or account authentication is required to stop auto-inheritance.")
+                return
 
             storage.disable_auto_inheritance(clean_code, storage_dir)
             self.send_json_response(HTTPStatus.OK, {
@@ -2233,12 +3012,34 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
         # Route: Transfer / Switch to Inherited Mode (Manual Handover)
         if path == "/api/inherit":
             code = data.get("code")
+            key_a = data.get("key_a") or data.get("key")
+            current_user = get_authenticated_user(self)
+
             if not code:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, "Missing 'code' field in JSON payload.")
                 return
 
             clean_code = str(code).strip()
             storage_dir = self.server.storage_dir
+            record = storage.load_vault_record(clean_code, storage_dir)
+
+            if record is None:
+                self.send_error_response(HTTPStatus.NOT_FOUND, f"No record found for code '{clean_code}'.")
+                return
+
+            owner = record.get("owner_username")
+            is_owner = bool(current_user and owner and current_user.lower() == owner.lower())
+            server_key_b = record.get("server_key_b")
+
+            if not is_owner:
+                if not key_a or not server_key_b:
+                    self.send_error_response(HTTPStatus.UNAUTHORIZED, "Key A or account authentication is required for handover.")
+                    return
+                try:
+                    decrypt_split(record["encrypted_text"], str(key_a).strip(), server_key_b.strip())
+                except Exception:
+                    self.send_error_response(HTTPStatus.UNAUTHORIZED, "Invalid Key A for this storage code.")
+                    return
 
             try:
                 key_b, encrypted_text, recipient_email = storage.switch_to_inherited_mode(clean_code, storage_dir)
@@ -2275,11 +3076,12 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))
             return
 
-        # Route: Decrypt by Code + Key A (+ Key B if in Inherited Mode or secondary device)
+        # Route: Decrypt by Code + Key A (+ Key B if in Inherited Mode or not logged in as owner)
         if path == "/api/decrypt":
             code = data.get("code")
             key_a = data.get("key_a") or data.get("key")
             key_b = data.get("key_b")
+            current_user = get_authenticated_user(self)
 
             if not code or not key_a:
                 self.send_error_response(
@@ -2302,7 +3104,8 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             mode = record.get("mode", "normal")
             encrypted_text = record.get("encrypted_text", "")
             server_key_b = record.get("server_key_b")
-            bound_device = record.get("device_id")
+            owner = record.get("owner_username")
+            is_owner = bool(current_user and owner and current_user.lower() == owner.lower())
 
             if mode == "inherited":
                 if not key_b:
@@ -2316,14 +3119,20 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 # Normal Mode:
                 if key_b:
                     effective_key_b = key_b
-                elif server_key_b and (not bound_device or (device_id and bound_device == device_id)):
+                elif server_key_b and is_owner:
                     effective_key_b = server_key_b
                     # Touch activity timestamp on successful decryption by owner
+                    storage.touch_record_activity(clean_code, storage_dir)
+                    if current_user:
+                        storage.touch_user_vaults(current_user, storage_dir)
+                elif server_key_b and not owner:
+                    # Legacy record without owner
+                    effective_key_b = server_key_b
                     storage.touch_record_activity(clean_code, storage_dir)
                 else:
                     self.send_error_response(
                         HTTPStatus.BAD_REQUEST,
-                        "Key B is required to decrypt on this device in Normal Mode. Enter Key B or switch to Inherited Mode.",
+                        "Key B is required to decrypt unless you are logged into the account that created this vault.",
                     )
                     return
 
@@ -2448,14 +3257,17 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def send_json_response(self, status: HTTPStatus, data: dict) -> None:
-        """Send a JSON formatted response."""
+    def send_json_response(self, status: HTTPStatus, data: dict, cookies: Optional[List[str]] = None) -> None:
+        """Send a JSON formatted response with optional Set-Cookie headers."""
         body = json.dumps(data, indent=2).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("X-Content-Type-Options", "nosniff")
+        if cookies:
+            for c in cookies:
+                self.send_header("Set-Cookie", c)
         self.end_headers()
         self.wfile.write(body)
 
@@ -2497,6 +3309,7 @@ class CodeGenServer(ThreadingHTTPServer):
         default_charset=DEFAULT_CHARSET,
         default_format="text",
         storage_dir=storage.DEFAULT_STORAGE_DIR,
+        users_dir=None,
         key_bits=DEFAULT_KEY_BITS,
         inactivity_days=DEFAULT_INACTIVITY_DAYS,
     ):
@@ -2505,10 +3318,15 @@ class CodeGenServer(ThreadingHTTPServer):
         self.default_charset = default_charset
         self.default_format = default_format
         self.storage_dir = storage_dir
+        if users_dir:
+            self.users_dir = users_dir
+        else:
+            self.users_dir = os.getenv("USERS_DIR", os.path.join(self.storage_dir, "users"))
         self.key_bits = key_bits
         self.inactivity_days = inactivity_days
         self.is_ssl = False
         storage.ensure_storage_dir(self.storage_dir)
+        storage.ensure_users_dir(self.users_dir)
 
 
 def parse_arguments() -> argparse.Namespace:
