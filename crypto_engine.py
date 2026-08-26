@@ -44,6 +44,18 @@ def generate_split_keys(bits: int = DEFAULT_KEY_BITS) -> Tuple[str, str]:
     return key_a, key_b
 
 
+def safe_b64decode(s: str) -> bytes:
+    """Safely decode Base64 string handling padding, whitespace, url-safe chars, and spaces."""
+    if not isinstance(s, str):
+        raise ValueError("Key or payload must be a string.")
+    clean = s.strip().strip('"').strip("'")
+    clean = clean.replace("-", "+").replace("_", "/").replace(" ", "+")
+    missing_padding = len(clean) % 4
+    if missing_padding:
+        clean += "=" * (4 - missing_padding)
+    return base64.b64decode(clean)
+
+
 def combine_keys(key_a_b64: str, key_b_b64: str) -> bytes:
     """
     Combine Key A and Key B via constant-time XOR secret sharing.
@@ -51,8 +63,8 @@ def combine_keys(key_a_b64: str, key_b_b64: str) -> bytes:
     For extended keys (> 32 bytes), HKDF-SHA512 derives the master AES key.
     """
     try:
-        a_bytes = base64.b64decode(key_a_b64.strip())
-        b_bytes = base64.b64decode(key_b_b64.strip())
+        a_bytes = safe_b64decode(key_a_b64)
+        b_bytes = safe_b64decode(key_b_b64)
     except Exception as e:
         raise ValueError(f"Invalid Base64 key format: {e}")
 
@@ -191,7 +203,7 @@ def _decrypt_with_key_bytes(encrypted_b64: str, key_bytes: bytes) -> str:
         raise ValueError("Encrypted text payload cannot be empty.")
 
     try:
-        payload = base64.b64decode(encrypted_b64.strip())
+        payload = safe_b64decode(encrypted_b64)
     except Exception as e:
         raise ValueError(f"Invalid Base64 ciphertext: {e}")
 
