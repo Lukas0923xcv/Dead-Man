@@ -1,0 +1,29 @@
+services:
+  secure-vault:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: secure-vault-server
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+      - "${MONITOR_PORT:-8081}:8081"
+    environment:
+      - PORT=8080
+      - MONITOR_PORT=8081
+      - HOST=0.0.0.0
+      - KEY_BITS=${KEY_BITS:-256}
+      - STORAGE_DIR=/app/data/vault
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+    volumes:
+      - ./data/vault:/app/data/vault
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
