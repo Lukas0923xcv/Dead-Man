@@ -61,8 +61,8 @@ class TestMonitorStorage(unittest.TestCase):
 
         inht_status = next(s for s in statuses if s["code"] == "INHT5678")
         self.assertEqual(inht_status["mode"], "inherited")
-        self.assertEqual(inht_status["time_left_formatted"], "Triggered (Inherited)")
-        self.assertEqual(inht_status["seconds_remaining"], 0)
+        self.assertIn("Purge", inht_status["time_left_formatted"])
+        self.assertGreater(inht_status["seconds_remaining"], 0)
 
 
 class TestMonitorServerIntegration(unittest.TestCase):

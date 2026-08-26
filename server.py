@@ -1206,6 +1206,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
             <div id="res-decrypted" class="item-code" style="white-space: pre-wrap; font-size: 13.5px;"></div>
           </div>
+
+          <!-- Advice Banner to Create New Encryption & Dead Man Notice -->
+          <div id="dec-advice-section" class="alert alert-warning" style="margin-top: 12px; font-size: 13px;">
+            <div data-i18n="dec_advice_new_enc">💡 <strong>Empfehlung:</strong> SecureVault ist ein Dead-Man-Switch-Dienst und kein Cloud-Speicher. Wenn Sie diese Daten weiterhin verwahren möchten, erstellen Sie bitte eine neue Verschlüsselung mit derselben Datei oder demselben Text.</div>
+          </div>
         </div>
       </div>
 
@@ -1377,7 +1382,116 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         nav_info: "Info",
         
         hero_title: "Zero-Knowledge Digital Vault & Cryptographic Custody",
-        hero_desc: "Store confidential files, credentials, documents, and digital inheritances. Encrypted end-to-end with 256-bit split keys and hosted in Switzerland under strict data protection principles.",
+        hero_desc: "Kryptographischer Dead-Man-Switch zur sicheren Verwahrung vertraulicher Dokumente und digitaler Nachlässe. Wir sind ein reiner Dead-Man-Dienst, kein permanenter Cloud-Speicher. Daten im Nachlassmodus werden 30 Tage nach Freigabe unwiderruflich gelöscht.",
+        btn_open_vault: "Tresor öffnen →",
+        btn_more_info: "Mehr Informationen",
+        
+        hl1_title: "Dual-Key Split (256-Bit)",
+        hl1_desc: "Kein Schlüssel allein kann entschlüsseln.",
+        hl2_title: "Schweizer Zero-Knowledge",
+        hl2_desc: "Server speichert 0 KB Klartext. Keine Einsicht.",
+        hl3_title: "Dead Man's Switch & Auto-Löschung",
+        hl3_desc: "Vererbung nach Inaktivität. Datenlöschung 30 Tage nach Nachlass.",
+        
+        modal_title: "Architektur & Funktionsweise",
+        flow_title: "Kryptographische Verwahrungs-Pipeline",
+        step1_title: "Geheimnis eingeben",
+        step1_desc: "Text eingeben oder vertrauliche Dateien anhängen.",
+        step2_title: "Split-Key Aufteilung",
+        step2_desc: "Erzeugung von 256-Bit Schlüssel A und Schlüssel B.",
+        step3_title: "Zero-Knowledge",
+        step3_desc: "Vollständig als Chiffretext vor der Speicherung verschlüsselt.",
+        step4_title: "Abrufen / Vererben",
+        step4_desc: "Direkte Geräte-Entschlüsselung oder Nachlass-Übergabe mit 30-Tage-Löschfenster.",
+        
+        feat1_title: "Dual-Key Split (256-Bit)",
+        feat1_desc: "Jeder Datensatz wird in Schlüssel A und Schlüssel B aufgeteilt. Kein Schlüssel allein kann entschlüsseln. Nur beide zusammen stellen Ihre Daten wieder her.",
+        feat2_title: "Gerätegebundener Normalmodus",
+        feat2_desc: "Auf Ihrem Hauptgerät wird Schlüssel B automatisch angewendet. Sie benötigen zur Entschlüsselung lediglich Ihren 16-stelligen Code und Schlüssel A.",
+        feat3_title: "30-Tage Inaktivitäts-Nachlass & 30-Tage Auto-Löschung",
+        feat3_desc: "Besuchen Sie die Seite 30 Tage lang nicht, wird Schlüssel B an Ihren Erben gesendet. 30 Tage nach Auslösung des Nachlasses werden alle Daten unwiderruflich vom Server gelöscht (Dead-Man-Switch-Dienst, kein Cloud-Speicher).",
+        feat4_title: "Verschlüsselte Dateianhänge",
+        feat4_desc: "Vertrauliche PDFs, Dokumente, Ausweiskopien oder Bilder anhängen – mit 1-Klick-Entschlüsselung direkt im Browser.",
+        feat5_title: "Zero-Knowledge Speicher",
+        feat5_desc: "Dateien, Texte und Dateinamen werden vor der Speicherung verschlüsselt. Server-Infrastrukturen haben keinerlei Einsicht in Ihre Daten.",
+        feat6_title: "Schweizer Datenschutz & Standort",
+        feat6_desc: "Betrieben nach strengen Schweizer Datenschutzgesetzen. Höchste Privatsphäre ohne Tracker und ohne Telemetrie.",
+        
+        spec_enc: "Verschlüsselung:",
+        spec_split: "Key-Split:",
+        spec_plain: "Klartext:",
+        spec_plain_val: "0 KB gespeichert",
+        spec_inactivity: "Inaktivität:",
+        spec_inactivity_val: "30 Tage",
+        spec_juris: "Standort:",
+        spec_juris_val: "Schweiz",
+        
+        tab_encrypt: "Verschlüsseln",
+        tab_decrypt: "Entschlüsseln",
+        tab_inherit: "Vererbung",
+        
+        enc_title: "Daten & Dateien verschlüsseln",
+        enc_subtitle: "Verschlüsselt mit Dual-Key-Split. Der Server kann Dateien oder Texte nicht lesen.",
+        enc_label_text: "Geheime Notizen / Information",
+        enc_hint_text: "(Optional bei Dateianhang)",
+        enc_ph_text: "Vertrauliche Notizen, Passwörter oder Anweisungen eingeben...",
+        enc_label_file: "Datei anhängen",
+        enc_hint_file: "(Optional — vollständig durch Schlüssel verschlüsselt)",
+        dropzone_text: "Klicken zum Auswählen oder Datei hierher ziehen",
+        dropzone_hint: "Dokumente, PDFs, Bilder, Archive — jedes Dateiformat",
+        enc_label_auto_inherit: "Automatischer Nachlass (Dead Man's Switch)",
+        opt_inherit_30d: "Aktiviert (30 Tage Inaktivität — Empfänger-E-Mail Pflicht)",
+        opt_inherit_never: "Deaktiviert / Nie (Keine automatische Vererbung, kein Timer)",
+        enc_label_email: "Empfänger-E-Mail (Pflichtfeld)",
+        enc_label_email_optional: "Empfänger-E-Mail (Optional)",
+        enc_email_warning: "<strong>Wichtig:</strong> Wenn keine gültige E-Mail-Adresse angegeben wird, gehen Ihre Daten und der Schlüssel bei Auslösung des Nachlasses unwiderruflich verloren! (Daten werden 30 Tage nach Nachlass gelöscht).",
+        enc_email_disabled_note: "ℹ️ <strong>Hinweis:</strong> Automatischer Nachlass ist deaktiviert. Schlüssel B wird niemals automatisch übertragen.",
+        btn_encrypt_save: "Verschlüsseln & Speichern",
+        enc_success: "Erfolgreich gespeichert. Auf diesem Gerät benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.",
+        label_storage_code: "Speichercode",
+        label_key_a: "Ihr privater Schlüssel A",
+        
+        dec_title: "Daten & Dateien entschlüsseln",
+        dec_subtitle: "Geben Sie Ihren Speichercode und Schlüssel A ein, um Ihre Daten abzurufen.",
+        dec_label_code: "Speichercode",
+        dec_ph_code: "16-stelliger Code",
+        dec_label_key_a: "Schlüssel A",
+        dec_ph_key_a: "Schlüssel A einfügen...",
+        dec_label_key_b: "Schlüssel B",
+        dec_hint_key_b: "(Nur auf Zweitgeräten oder im Nachlassmodus nötig)",
+        dec_ph_key_b: "Auf dem Originalgerät leer lassen...",
+        btn_decrypt: "Entschlüsseln",
+        btn_download_file: "Datei herunterladen",
+        label_dec_text: "Entschlüsselter Text",
+        dec_advice_new_enc: "💡 <strong>Empfehlung:</strong> SecureVault ist ein Dead-Man-Switch-Dienst und kein Cloud-Speicher. Wenn Sie diese Daten weiterhin verwahren möchten, erstellen Sie bitte eine neue Verschlüsselung mit derselben Datei oder demselben Text.",
+        
+        inh_title: "Nachlass übergeben (Vererbung)",
+        inh_subtitle: "Gibt Schlüssel B an den Empfänger frei oder deaktiviert den automatischen Nachlass dauerhaft.",
+        inh_warning: "<strong>Dead-Man-Switch-Prinzip (Kein Cloud-Speicher):</strong> 30 Tage nach Auslösung des Nachlasses werden alle verschlüsselten Daten unwiderruflich vom Server gelöscht. Sie können die Übergabe manuell ausführen oder die automatische Vererbung dauerhaft stoppen.",
+        label_inh_key_a: "Schlüssel A (zur Autorisierung)",
+        btn_inherit: "🚀 Nachlass jetzt ausführen",
+        btn_stop_inherit: "🛑 Nachlass dauerhaft stoppen",
+        inh_success: "<strong>Nachlass übergeben:</strong> Schlüssel B wurde versendet und vom Server gelöscht. ⚠️ <strong>30-Tage-Löschfenster:</strong> Der Erbe hat 30 Tage Zeit zum Abruf. Danach werden alle Daten unwiderruflich gelöscht (Dead-Man-Switch, kein Cloud-Speicher).",
+        inh_stopped_success: "<strong>Nachlass dauerhaft gestoppt:</strong> Der automatische Dead Man's Switch wurde deaktiviert. 💡 <strong>Empfehlung:</strong> Sie können bei Bedarf jederzeit eine neue Verschlüsselung für diese Datei oder diesen Text anlegen.",
+        label_released_key_b: "Freigegebener Schlüssel B",
+        
+        btn_copy: "Kopieren",
+        btn_copied: "Kopiert",
+        footer_text: "SecureVault • Zero-Knowledge Dead Man's Switch • Schweiz",
+        
+        err_fill_payload: "Bitte Text eingeben oder eine Datei anhängen.",
+        err_code_key_req: "Sowohl der Speichercode als auch Schlüssel A sind erforderlich.",
+        err_code_req: "Bitte den 16-stelligen Speichercode eingeben.",
+        err_email_req: "Bitte eine gültige Empfänger-E-Mail-Adresse eingeben (Pflichtfeld). Ohne gültige E-Mail-Adresse geht der Schlüssel bei Vererbung verloren!"
+      },
+      en: {
+        nav_overview: "Overview",
+        nav_encrypt: "Encrypt",
+        nav_decrypt: "Decrypt",
+        nav_info: "Info",
+        
+        hero_title: "Zero-Knowledge Digital Vault & Dead Man's Switch",
+        hero_desc: "Cryptographic Dead Man's Switch custody for confidential files and digital inheritances. We are a Dead Man service, not a permanent cloud host. Inherited data is permanently deleted 30 days after handover.",
         btn_open_vault: "Open Vault →",
         btn_more_info: "More Information",
         
@@ -1385,8 +1499,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         hl1_desc: "Neither Key A nor Key B alone can decrypt.",
         hl2_title: "Swiss Zero-Knowledge",
         hl2_desc: "Server stores 0 KB plaintext. Zero visibility.",
-        hl3_title: "Automatic Inheritance",
-        hl3_desc: "Transfers after 30 days of inactivity or manually anytime.",
+        hl3_title: "Dead Man's Switch & Auto-Purge",
+        hl3_desc: "Transfers upon inactivity. Permanently purged 30 days post-handover.",
         
         modal_title: "Architecture & How It Works",
         flow_title: "Cryptographic Custody Pipeline",
@@ -1397,14 +1511,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         step3_title: "Zero-Knowledge",
         step3_desc: "Encrypted into ciphertext prior to storage.",
         step4_title: "Retrieve / Inherit",
-        step4_desc: "Instant device decryption or heir handover.",
+        step4_desc: "Instant device decryption or heir handover with 30-day retrieval window.",
         
         feat1_title: "Dual-Key Split (256-Bit)",
         feat1_desc: "Every payload is split into Key A and Key B. Neither key alone can decrypt. Only the combination unlocks your data.",
         feat2_title: "Device-Bound Normal Mode",
         feat2_desc: "On your primary device, Key B is auto-applied in the background. You only need your 16-character Code and Key A to decrypt.",
-        feat3_title: "30-Day Inactivity Inheritance & Manual Transfer",
-        feat3_desc: "If you do not visit the site for 30 days (or trigger manually anytime), Key B is emailed to your heir and permanently wiped from the server.",
+        feat3_title: "30-Day Inactivity Inheritance & 30-Day Auto-Purge",
+        feat3_desc: "If you do not visit the site for 30 days, Key B is emailed to your heir. 30 days after inheritance, all data is permanently purged from the server (Dead Man service, not a cloud host).",
         feat4_title: "Encrypted File Attachments",
         feat4_desc: "Attach confidential PDFs, documents, identity scans, or images with 1-click in-browser decryption and download.",
         feat5_title: "Zero-Knowledge Storage",
@@ -1439,7 +1553,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         opt_inherit_never: "Disabled / Never (No auto-inheritance, timer stopped)",
         enc_label_email: "Recipient Email (Required)",
         enc_label_email_optional: "Recipient Email (Optional)",
-        enc_email_warning: "<strong>Important:</strong> If no valid email address is provided, your data and Key B will be permanently lost upon activation of inheritance (30 days of inactivity)!",
+        enc_email_warning: "<strong>Important:</strong> If no valid email address is provided, your data and Key B will be permanently lost upon activation of inheritance! (Data is permanently deleted 30 days after inheritance).",
         enc_email_disabled_note: "ℹ️ <strong>Note:</strong> Automatic inheritance is disabled. Key B will never be automatically transferred.",
         btn_encrypt_save: "Encrypt & Save",
         enc_success: "Saved successfully. On this device, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
@@ -1458,20 +1572,21 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         btn_decrypt: "Decrypt",
         btn_download_file: "Download File",
         label_dec_text: "Decrypted Text",
+        dec_advice_new_enc: "💡 <strong>Recommendation:</strong> SecureVault is a Dead Man's Switch service, not a permanent cloud host. If you wish to keep custody of this data, please create a fresh encryption with the same file or text.",
         
         inh_title: "Transfer Custody (Inheritance)",
         inh_subtitle: "Releases Key B to the recipient or permanently stops automated inheritance.",
-        inh_warning: "<strong>Automated & Manual Protection:</strong> If you do not visit the site for 30 days, Key B will be automatically sent to the recipient. You can trigger the transfer manually anytime or permanently stop the auto-inheritance timer.",
+        inh_warning: "<strong>Dead Man's Switch Policy (Not Cloud Storage):</strong> 30 days after inheritance handover, all encrypted data is permanently deleted from the server. You can trigger the transfer manually anytime or stop auto-inheritance.",
         label_inh_key_a: "Key A (for Authorization)",
         btn_inherit: "🚀 Transfer Custody Now",
         btn_stop_inherit: "🛑 Stop Auto-Inheritance Permanently",
-        inh_success: "<strong>Custody Transferred:</strong> Key B has been removed from server storage.",
-        inh_stopped_success: "<strong>Auto-Inheritance Permanently Stopped:</strong> The automated Dead Man's Switch has been disabled for this code. Key B will never be automatically transferred.",
+        inh_success: "<strong>Custody Transferred:</strong> Key B has been emailed and removed from server storage. ⚠️ <strong>30-Day Purge Window:</strong> The heir has 30 days to retrieve data before it is permanently deleted (Dead Man service policy).",
+        inh_stopped_success: "<strong>Auto-Inheritance Permanently Stopped:</strong> The automated Dead Man's Switch has been disabled for this code. 💡 <strong>Recommendation:</strong> You can create a fresh encryption for this file or text anytime.",
         label_released_key_b: "Released Key B",
         
         btn_copy: "Copy",
         btn_copied: "Copied",
-        footer_text: "SecureVault • Zero-Knowledge Cryptographic Custody • Switzerland",
+        footer_text: "SecureVault • Zero-Knowledge Dead Man's Switch • Switzerland",
         
         err_fill_payload: "Please enter text or attach a file to encrypt.",
         err_code_key_req: "Both the Storage Code and Key A are required.",
@@ -1979,7 +2094,9 @@ def process_inactive_vault_records(
     """
     Check for records that have had no user activity for `inactivity_days`
     and automatically switch them to Inherited Mode (sending Key B to recipient).
+    Also purges records that have been in Inherited Mode for 30+ days.
     """
+    # 1. Switch inactive normal records to Inherited Mode
     expired_codes = storage.get_inactive_expired_records(inactivity_days, storage_dir)
     for code in expired_codes:
         try:
@@ -1998,6 +2115,17 @@ def process_inactive_vault_records(
         except Exception as e:
             sys.stderr.write(f"[Auto-Inheritance Error] Failed processing inactive code '{code}': {e}\n")
 
+    # 2. Purge records in Inherited Mode older than 30 days (Dead Man service policy)
+    try:
+        purged_codes = storage.purge_expired_inherited_records(purge_days=30, storage_dir=storage_dir)
+        for pcode in purged_codes:
+            sys.stderr.write(
+                f"[Data-Purge] Record '{pcode}' exceeded 30-day inheritance window and was permanently deleted from disk.\n"
+            )
+    except Exception as e:
+        sys.stderr.write(f"[Data-Purge Error] Failed during inherited data purge scan: {e}\n")
+
+    sys.stderr.flush()
     return len(expired_codes)
 
 

@@ -82,6 +82,13 @@ Navigate to the 'Decrypt' tab and provide:
 
 Both Key A and Key B are required to decrypt.
 
+--------------------------------------------------
+⚠️ IMPORTANT RETENTION NOTICE:
+SecureVault is a cryptographic Dead Man's Switch service, NOT a permanent cloud host.
+All data for this record will be PERMANENTLY DELETED 30 days after this notification.
+Please decrypt and download your data promptly.
+--------------------------------------------------
+
 SecureVault Team
 """
 
@@ -95,6 +102,7 @@ SecureVault Team
     h2 {{ color: #f0f6fc; margin-top: 0; }}
     .key-box {{ background: #090d13; border: 1px solid #bc8cff55; color: #bc8cff; font-family: monospace; font-size: 14px; padding: 12px; border-radius: 6px; word-break: break-all; margin: 12px 0; }}
     .code-box {{ background: #090d13; border: 1px solid #f2cc6055; color: #f2cc60; font-family: monospace; font-size: 16px; font-weight: bold; padding: 8px 12px; border-radius: 6px; display: inline-block; }}
+    .warning-box {{ background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.35); border-radius: 6px; padding: 12px; margin: 16px 0; font-size: 13px; color: #f85149; line-height: 1.45; }}
     .footer {{ font-size: 12px; color: #8b949e; margin-top: 20px; }}
   </style>
 </head>
@@ -111,7 +119,12 @@ SecureVault Team
 
     <p style="margin-top: 16px;">To decrypt this record, visit <a href="{server_url}" style="color: #58a6ff;">{server_url}</a> and enter both <strong>Key A</strong> and <strong>Key B</strong>.</p>
 
-    <div class="footer">SecureVault • Dual-Key Split Encryption</div>
+    <div class="warning-box">
+      <strong>⚠️ 30-Day Data Deletion Notice:</strong><br>
+      SecureVault is a cryptographic Dead Man's Switch service, <em>not a permanent cloud storage host</em>. All data for this record will be <strong>permanently deleted 30 days after inheritance</strong>. Please decrypt and save your data promptly.
+    </div>
+
+    <div class="footer">SecureVault • Dual-Key Split Dead Man's Switch • Switzerland</div>
   </div>
 </body>
 </html>

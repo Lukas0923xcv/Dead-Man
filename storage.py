@@ -218,6 +218,48 @@ def disable_auto_inheritance(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) 
     return record
 
 
+def purge_expired_inherited_records(
+    purge_days: int = 30, storage_dir: str = DEFAULT_STORAGE_DIR
+) -> List[str]:
+    """
+    Purge and permanently delete vault files that have been in Inherited Mode for 30+ days.
+    (SecureVault is a Dead Man's Switch service, not a cloud host. Heirs have 30 days to retrieve data).
+    """
+    ensure_storage_dir(storage_dir)
+    purged_codes = []
+    now = datetime.datetime.now(datetime.timezone.utc)
+    purge_delta = datetime.timedelta(days=purge_days)
+
+    for filename in os.listdir(storage_dir):
+        if not filename.endswith(".json"):
+            continue
+        file_path = os.path.join(storage_dir, filename)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                record = json.load(f)
+
+            if record.get("mode") != "inherited":
+                continue
+
+            inherited_at_str = record.get("inherited_at")
+            if not inherited_at_str:
+                continue
+
+            clean_inh_ts = inherited_at_str.replace("Z", "+00:00")
+            inherited_at = datetime.datetime.fromisoformat(clean_inh_ts)
+            if inherited_at.tzinfo is None:
+                inherited_at = inherited_at.replace(tzinfo=datetime.timezone.utc)
+
+            if (now - inherited_at) >= purge_delta:
+                code = record.get("code") or filename[:-5]
+                os.remove(file_path)
+                purged_codes.append(code)
+        except Exception:
+            continue
+
+    return purged_codes
+
+
 def switch_to_inherited_mode(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> Tuple[str, str, Optional[str]]:
     """
     Switch a vault record to Inherited Mode:
@@ -326,8 +368,23 @@ def get_all_vault_statuses(
                     inactivity_formatted = f"{rec_inactivity_days} Days"
                     time_left_formatted = "Unknown"
             else:
-                inactivity_formatted = "N/A"
-                time_left_formatted = "Triggered (Inherited)"
+                # Inherited Mode: 30-Day Auto-Purge Countdown (Not a cloud host, Dead Man service)
+                inactivity_formatted = "30d Purge Window"
+                if inherited_at:
+                    clean_inh_ts = inherited_at.replace("Z", "+00:00")
+                    inh_time = datetime.datetime.fromisoformat(clean_inh_ts)
+                    if inh_time.tzinfo is None:
+                        inh_time = inh_time.replace(tzinfo=datetime.timezone.utc)
+                    purge_deadline = inh_time + datetime.timedelta(days=30)
+                    deadline_iso = purge_deadline.isoformat()
+                    seconds_left = (purge_deadline - now).total_seconds()
+                    seconds_remaining = max(0, int(seconds_left))
+                    if seconds_left > 0:
+                        time_left_formatted = f"🗑️ Purge in {format_duration(seconds_left)}"
+                    else:
+                        time_left_formatted = "Expired (Pending Data Purge)"
+                else:
+                    time_left_formatted = "Triggered (30d Purge Window)"
 
             statuses.append({
                 "code": code,
