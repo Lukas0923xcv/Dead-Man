@@ -1006,7 +1006,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <!-- Card 2 -->
             <div class="feature-card-modal">
               <h3 data-i18n="feat2_title">Gerätegebundener Normalmodus</h3>
-              <p data-i18n="feat2_desc">Auf Ihrem Hauptgerät wird Schlüssel B automatisch angewendet. Sie benötigen zur Entschlüsselung lediglich Ihren 8-stelligen Code und Schlüssel A.</p>
+              <p data-i18n="feat2_desc">Auf Ihrem Hauptgerät wird Schlüssel B automatisch angewendet. Sie benötigen zur Entschlüsselung lediglich Ihren 16-stelligen Code und Schlüssel A.</p>
             </div>
 
             <!-- Card 3 -->
@@ -1141,7 +1141,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         <div class="form-group">
           <label for="dec-code" data-i18n="dec_label_code">Speichercode</label>
-          <input type="text" id="dec-code" data-i18n-placeholder="dec_ph_code" placeholder="8-stelliger Code" maxlength="8">
+          <input type="text" id="dec-code" data-i18n-placeholder="dec_ph_code" placeholder="16-stelliger Code" maxlength="32">
         </div>
 
         <div class="form-group">
@@ -1206,7 +1206,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         <div class="form-group">
           <label for="inh-code" data-i18n="dec_label_code">Speichercode</label>
-          <input type="text" id="inh-code" data-i18n-placeholder="dec_ph_code" placeholder="8-stelliger Code" maxlength="8">
+          <input type="text" id="inh-code" data-i18n-placeholder="dec_ph_code" placeholder="16-stelliger Code" maxlength="32">
         </div>
 
         <button class="btn-main" onclick="handleInherit()" data-i18n="btn_inherit">Nachlassübergabe jetzt ausführen</button>
@@ -1270,7 +1270,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         feat1_title: "Dual-Key Split (256-Bit)",
         feat1_desc: "Jeder Datensatz wird in Schlüssel A und Schlüssel B aufgeteilt. Kein Schlüssel allein kann entschlüsseln. Nur beide zusammen stellen Ihre Daten wieder her.",
         feat2_title: "Gerätegebundener Normalmodus",
-        feat2_desc: "Auf Ihrem Hauptgerät wird Schlüssel B automatisch angewendet. Sie benötigen zur Entschlüsselung lediglich Ihren 8-stelligen Code und Schlüssel A.",
+        feat2_desc: "Auf Ihrem Hauptgerät wird Schlüssel B automatisch angewendet. Sie benötigen zur Entschlüsselung lediglich Ihren 16-stelligen Code und Schlüssel A.",
         feat3_title: "30-Tage Inaktivitäts-Nachlass & Manuelle Übergabe",
         feat3_desc: "Besuchen Sie die Seite 30 Tage lang nicht (oder lösen Sie die Übergabe manuell aus), wird Schlüssel B per E-Mail an Ihren Erben gesendet und unwiderruflich vom Server gelöscht.",
         feat4_title: "Verschlüsselte Dateianhänge",
@@ -1312,7 +1312,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         dec_title: "Daten & Dateien entschlüsseln",
         dec_subtitle: "Geben Sie Ihren Speichercode und Schlüssel A ein, um Ihre Daten abzurufen.",
         dec_label_code: "Speichercode",
-        dec_ph_code: "8-stelliger Code",
+        dec_ph_code: "16-stelliger Code",
         dec_label_key_a: "Schlüssel A",
         dec_ph_key_a: "Schlüssel A einfügen...",
         dec_label_key_b: "Schlüssel B",
@@ -1335,7 +1335,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         err_fill_payload: "Bitte Text eingeben oder eine Datei anhängen.",
         err_code_key_req: "Sowohl der Speichercode als auch Schlüssel A sind erforderlich.",
-        err_code_req: "Bitte den 8-stelligen Speichercode eingeben."
+        err_code_req: "Bitte den 16-stelligen Speichercode eingeben."
       },
       en: {
         nav_overview: "Overview",
@@ -1369,7 +1369,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         feat1_title: "Dual-Key Split (256-Bit)",
         feat1_desc: "Every payload is split into Key A and Key B. Neither key alone can decrypt. Only the combination unlocks your data.",
         feat2_title: "Device-Bound Normal Mode",
-        feat2_desc: "On your primary device, Key B is auto-applied in the background. You only need your 8-character Code and Key A to decrypt.",
+        feat2_desc: "On your primary device, Key B is auto-applied in the background. You only need your 16-character Code and Key A to decrypt.",
         feat3_title: "30-Day Inactivity Inheritance & Manual Transfer",
         feat3_desc: "If you do not visit the site for 30 days (or trigger manually anytime), Key B is emailed to your heir and permanently wiped from the server.",
         feat4_title: "Encrypted File Attachments",
@@ -1411,7 +1411,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         dec_title: "Decrypt Data & Files",
         dec_subtitle: "Enter your Storage Code and Key A to retrieve your decrypted information.",
         dec_label_code: "Storage Code",
-        dec_ph_code: "8-character code",
+        dec_ph_code: "16-character code",
         dec_label_key_a: "Key A",
         dec_ph_key_a: "Paste Key A...",
         dec_label_key_b: "Key B",
@@ -1434,7 +1434,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         err_fill_payload: "Please enter text or attach a file to encrypt.",
         err_code_key_req: "Both the Storage Code and Key A are required.",
-        err_code_req: "Please enter the 8-character Storage Code."
+        err_code_req: "Please enter the 16-character Storage Code."
       }
     };
 
@@ -2054,7 +2054,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
 
                 storage_dir = self.server.storage_dir
                 while True:
-                    code = generate_code(length=8, charset="alphanumeric")
+                    code = generate_code(length=16, charset="alphanumeric")
                     if not storage.code_exists(code, storage_dir):
                         break
 
@@ -2145,7 +2145,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             if not code or not key_a:
                 self.send_error_response(
                     HTTPStatus.BAD_REQUEST,
-                    "Both 'code' (8-character code) and 'key_a' must be provided.",
+                    "Both 'code' (16-character code) and 'key_a' must be provided.",
                 )
                 return
 

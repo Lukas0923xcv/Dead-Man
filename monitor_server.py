@@ -418,7 +418,7 @@ MONITOR_HTML = """<!DOCTYPE html>
 
     <!-- Search & Filter Controls -->
     <div class="filter-bar">
-      <input type="text" id="search-box" class="search-input" placeholder="Filter by 8-digit code..." oninput="renderTable()">
+      <input type="text" id="search-box" class="search-input" placeholder="Filter by storage code..." oninput="renderTable()">
       <select id="mode-filter" class="select-filter" onchange="renderTable()">
         <option value="all">All Modes</option>
         <option value="normal">Normal Mode</option>
@@ -431,7 +431,7 @@ MONITOR_HTML = """<!DOCTYPE html>
       <table>
         <thead>
           <tr>
-            <th>8-Digit Short Code</th>
+            <th>16-Character Storage Code</th>
             <th>Mode</th>
             <th>Inactivity Window</th>
             <th>Time Left (Dead Man's Switch)</th>

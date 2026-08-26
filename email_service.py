@@ -50,7 +50,7 @@ def send_key_b_email(
     Send an email containing Key B and the storage code to the recipient.
     
     :param to_email: Destination recipient email address.
-    :param code: 8-character storage code.
+    :param code: 16-character storage code.
     :param key_b: Base64 256-bit Key B.
     :param server_url: Web vault URL for instructions.
     :return: (success: bool, status_message: str)

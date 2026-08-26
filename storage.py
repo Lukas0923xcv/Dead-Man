@@ -1,6 +1,6 @@
 """
 File-based storage engine for Dual-Key split encrypted records.
-Stores vault records under unique 8-character reference codes with device binding,
+Stores vault records under unique 16-character reference codes with device binding,
 last activity tracking, and Normal/Inherited mode support.
 """
 
@@ -12,8 +12,8 @@ from typing import Dict, List, Optional, Tuple
 
 DEFAULT_STORAGE_DIR = os.getenv("STORAGE_DIR", os.path.join(os.path.dirname(__file__), "data", "vault"))
 
-# Strict validator for 8-character alphanumeric codes
-CODE_PATTERN = re.compile(r"^[a-zA-Z0-9]{8}$")
+# Validator for alphanumeric storage codes (standard: 16 chars, flexible 8-32 chars)
+CODE_PATTERN = re.compile(r"^[a-zA-Z0-9]{8,32}$")
 
 
 def ensure_storage_dir(storage_dir: str = DEFAULT_STORAGE_DIR) -> str:
@@ -23,7 +23,7 @@ def ensure_storage_dir(storage_dir: str = DEFAULT_STORAGE_DIR) -> str:
 
 
 def validate_code(code: str) -> bool:
-    """Check if the provided code is a valid 8-character alphanumeric identifier."""
+    """Check if the provided code is a valid alphanumeric identifier (e.g. 16 characters)."""
     if not isinstance(code, str):
         return False
     return bool(CODE_PATTERN.match(code.strip()))
@@ -33,12 +33,12 @@ def get_file_path(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> str:
     """Get the sanitized absolute JSON file path for a code."""
     clean_code = code.strip()
     if not validate_code(clean_code):
-        raise ValueError(f"Invalid code format '{code}'. Must be an 8-character alphanumeric string.")
+        raise ValueError(f"Invalid code format '{code}'. Must be an alphanumeric string (8-32 characters).")
     return os.path.join(storage_dir, f"{clean_code}.json")
 
 
 def code_exists(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> bool:
-    """Check if an encrypted vault record exists for the given 8-character code."""
+    """Check if an encrypted vault record exists for the given code."""
     try:
         path = get_file_path(code, storage_dir)
         return os.path.isfile(path)

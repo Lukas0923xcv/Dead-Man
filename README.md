@@ -45,7 +45,7 @@ sudo docker compose up -d --build
 
 Open your browser at:
 - **Primary Vault Web App**: **`http://<SERVER_IP>:8080/`**
-- **Dead Man's Switch Monitor**: **`http://<SERVER_IP>:8081/`** (real-time overview of 8-digit codes, armed/inherited mode, and countdown timers).
+- **Dead Man's Switch Monitor**: **`http://<SERVER_IP>:8081/`** (real-time overview of 16-character codes, armed/inherited mode, and countdown timers).
 
 ---
 

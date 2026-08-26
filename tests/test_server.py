@@ -137,6 +137,7 @@ class TestServerIntegration(unittest.TestCase):
             data = json.loads(resp.read().decode("utf-8"))
             code = data["code"]
             key_a = data["key_a"]
+            self.assertEqual(len(code), 16)
             self.assertTrue(data["has_file"])
 
         # Verify on disk that the file content or name does NOT appear in raw text
