@@ -1046,6 +1046,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       color: var(--text-bright);
       letter-spacing: 0.04em;
     }
+    .vault-name-pill {
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--accent);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
     .status-pill {
       font-size: 10.5px;
       font-weight: 700;
@@ -1450,6 +1462,44 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <!-- =====================================================================
+         RENAME VAULT MODAL
+         ===================================================================== -->
+    <div id="rename-vault-modal" class="modal-overlay" onclick="closeRenameVaultModalOnBackdrop(event)">
+      <div class="modal-container" style="max-width: 430px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(99, 102, 241, 0.12); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              ✏️
+            </div>
+            <span data-i18n="rename_modal_title">Tresor-Name / Bezeichnung bearbeiten</span>
+          </div>
+          <button class="modal-close-btn" onclick="closeRenameVaultModal()" title="Schliessen">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <form id="rename-vault-form" onsubmit="handleSaveVaultName(event)">
+            <p style="font-size: 13px; line-height: 1.5; color: var(--text); margin-bottom: 14px;">
+              <span data-i18n="rename_modal_desc">Geben Sie eine individuelle Bezeichnung für Ihren Tresor ein (Code:</span> <strong id="rename-vault-code-display" style="font-family: 'JetBrains Mono', monospace; background: var(--card-subtle); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);"></strong>):
+            </p>
+
+            <div class="form-group">
+              <label for="rename-vault-input" data-i18n="rename_modal_label">Tresor-Name / Bezeichnung</label>
+              <input type="text" id="rename-vault-input" data-i18n-placeholder="rename_modal_ph" placeholder="z. B. Krypto-Seeds, Bankzugänge, Testament..." maxlength="64">
+            </div>
+
+            <div id="rename-vault-error" class="alert alert-error" style="display: none; margin-bottom: 12px;"></div>
+            <div id="rename-vault-success" class="alert alert-success" style="display: none; margin-bottom: 12px;"></div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px;">
+              <button type="button" class="btn-copy" style="padding: 9px 16px; font-size: 13px;" onclick="closeRenameVaultModal()" data-i18n="delete_modal_cancel">Abbrechen</button>
+              <button type="submit" class="btn-main" id="rename-vault-submit-btn" style="width: auto; padding: 9px 18px;" data-i18n="btn_save_email">Speichern</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
          VAULT SUBPAGE VIEW (ENCRYPT, DECRYPT, INHERIT, MY VAULTS)
          ===================================================================== -->
     <div id="view-app">
@@ -1482,6 +1532,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <div class="card-header">
             <div class="card-title" data-i18n="enc_title">Daten & Dateien verschlüsseln</div>
             <div class="card-subtitle" data-i18n="enc_subtitle">Verschlüsselt mit Dual-Key-Split. Der Server kann Dateien oder Texte nicht lesen.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="vault-name"><span data-i18n="enc_label_vault_name">Tresor-Name / Bezeichnung</span> <span class="hint" data-i18n="enc_hint_vault_name">(Optional — für Ihre Übersicht)</span></label>
+            <input type="text" id="vault-name" data-i18n-placeholder="enc_ph_vault_name" placeholder="z. B. Krypto-Passwörter, Testament, Notfallordner..." maxlength="64">
           </div>
 
           <div class="form-group">
@@ -1869,6 +1924,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         btn_save_email: "Speichern",
         update_email_success_msg: "Empfänger-E-Mails wurden erfolgreich aktualisiert.",
         
+        enc_label_vault_name: "Tresor-Name / Bezeichnung",
+        enc_hint_vault_name: "(Optional — für Ihre Übersicht)",
+        enc_ph_vault_name: "z. B. Krypto-Passwörter, Testament, Notfallordner...",
+        btn_rename_vault: "Name ändern",
+        rename_modal_title: "Tresor-Name bearbeiten",
+        rename_modal_desc: "Geben Sie eine individuelle Bezeichnung für Ihren Tresor ein (Code:",
+        rename_modal_label: "Tresor-Name / Bezeichnung",
+        rename_modal_ph: "z. B. Krypto-Seeds, Bankunterlagen, Testament...",
+        rename_success_msg: "Tresor-Name wurde erfolgreich aktualisiert.",
+        
         btn_copy: "Kopieren",
         btn_copied: "Kopiert",
         footer_text: "SecureVault • Zero-Knowledge Dead Man's Switch • Schweiz",
@@ -1925,6 +1990,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         enc_title: "Encrypt & Store Confidentially",
         enc_subtitle: "Zero-Knowledge storage with 256-bit split key & automatic 30-day inactivity emergency handover.",
+        enc_label_vault_name: "Vault Name / Label",
+        enc_hint_vault_name: "(Optional — for your overview)",
+        enc_ph_vault_name: "e.g., Crypto Seeds, Will, Emergency Folder...",
         enc_label_text: "Secret Text / Password / Notes",
         enc_ph_text: "Enter secret message, recovery seeds, PINs, or credentials...",
         enc_label_file: "Attach Confidential File (Optional)",
@@ -1980,6 +2048,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         btn_change_email: "Manage Emails",
         btn_save_email: "Save",
         update_email_success_msg: "Recipient emails updated successfully.",
+        
+        btn_rename_vault: "Rename",
+        rename_modal_title: "Edit Vault Name",
+        rename_modal_desc: "Enter a custom name/label for your vault (Code:",
+        rename_modal_label: "Vault Name / Label",
+        rename_modal_ph: "e.g., Crypto Seeds, Will, Emergency Folder...",
+        rename_success_msg: "Vault name updated successfully.",
         
         btn_copy: "Copy",
         btn_copied: "Copied",
@@ -2138,6 +2213,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeJsStr(str) {
+      if (!str) return '';
+      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
     async function loadUserVaults() {
       if (!currentUser) return;
       const loading = document.getElementById('vaults-loading');
@@ -2206,9 +2291,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             `;
           }
 
+          const vaultNamePill = v.vault_name ? `<span class="vault-name-pill" title="Benutzerdefinierter Tresor-Name">🏷️ ${escapeHtml(v.vault_name)}</span>` : '';
+
           item.innerHTML = `
             <div class="vault-card-top">
-              <span class="vault-code-tag">${v.code}</span>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span class="vault-code-tag">${v.code}</span>
+                ${vaultNamePill}
+              </div>
               <span class="status-pill ${statusClass}">${statusText}</span>
             </div>
             <div class="vault-meta-row">
@@ -2216,8 +2306,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </div>
             <div class="vault-actions-row">
               <button class="btn-vault-action primary" onclick="openDecryptForCode('${v.code}')">🔓 ${currentLang === 'de' ? 'Entschlüsseln' : 'Decrypt'}</button>
+              <button class="btn-vault-action" onclick="openRenameVaultModal('${v.code}', '${escapeJsStr(v.vault_name || '')}')">✏️ ${currentLang === 'de' ? 'Name ändern' : 'Rename'}</button>
               ${v.mode === 'normal' ? `
-                <button class="btn-vault-action" onclick="openUpdateEmailModal('${v.code}', '${v.recipient_email || ''}', '${v.recipient_email_2 || ''}')">✉️ ${currentLang === 'de' ? 'E-Mails verwalten' : 'Manage Emails'}</button>
+                <button class="btn-vault-action" onclick="openUpdateEmailModal('${v.code}', '${escapeJsStr(v.recipient_email || '')}', '${escapeJsStr(v.recipient_email_2 || '')}')">✉️ ${currentLang === 'de' ? 'E-Mails verwalten' : 'Manage Emails'}</button>
                 <button class="btn-vault-action" onclick="openInheritForCode('${v.code}')">🚀 ${currentLang === 'de' ? 'Nachlass auslösen' : 'Trigger Handover'}</button>
                 <button class="btn-vault-action danger" onclick="openStopInheritForCode('${v.code}')">🛑 ${currentLang === 'de' ? 'Verbindung trennen' : 'Disconnect'}</button>
               ` : ''}
@@ -2232,6 +2323,80 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         loading.style.display = 'none';
         list.innerHTML = `<div class="alert alert-error" style="display:block;">${err.message}</div>`;
         list.style.display = 'block';
+      }
+    }
+
+    let pendingRenameCode = null;
+
+    function openRenameVaultModal(code, currentName) {
+      pendingRenameCode = code;
+      const codeDisplay = document.getElementById('rename-vault-code-display');
+      if (codeDisplay) codeDisplay.textContent = code;
+      const nameInput = document.getElementById('rename-vault-input');
+      if (nameInput) nameInput.value = currentName || '';
+      const errBox = document.getElementById('rename-vault-error');
+      if (errBox) errBox.style.display = 'none';
+      const succBox = document.getElementById('rename-vault-success');
+      if (succBox) succBox.style.display = 'none';
+
+      document.getElementById('rename-vault-modal').style.display = 'flex';
+      setTimeout(() => {
+        if (nameInput) {
+          nameInput.focus();
+          nameInput.select();
+        }
+      }, 100);
+    }
+
+    function closeRenameVaultModal() {
+      pendingRenameCode = null;
+      document.getElementById('rename-vault-modal').style.display = 'none';
+    }
+
+    function closeRenameVaultModalOnBackdrop(e) {
+      if (e.target.id === 'rename-vault-modal') {
+        closeRenameVaultModal();
+      }
+    }
+
+    async function handleSaveVaultName(e) {
+      e.preventDefault();
+      if (!pendingRenameCode) return;
+      const errBox = document.getElementById('rename-vault-error');
+      const succBox = document.getElementById('rename-vault-success');
+      const btn = document.getElementById('rename-vault-submit-btn');
+      const newName = document.getElementById('rename-vault-input').value.trim();
+
+      errBox.style.display = 'none';
+      succBox.style.display = 'none';
+      if (btn) btn.disabled = true;
+
+      try {
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('/api/update-vault-name', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ code: pendingRenameCode, vault_name: newName })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update vault name.');
+
+        succBox.textContent = I18N[currentLang].rename_success_msg || 'Tresor-Name erfolgreich aktualisiert.';
+        succBox.style.display = 'block';
+        setTimeout(() => {
+          closeRenameVaultModal();
+          if (currentUser) {
+            loadUserVaults();
+          }
+        }, 600);
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      } finally {
+        if (btn) btn.disabled = false;
       }
     }
 
@@ -2697,8 +2862,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         return;
       }
 
+      const vault_name_el = document.getElementById('vault-name');
+      const vault_name = vault_name_el ? vault_name_el.value.trim() : '';
+
       try {
         const payload = { text, recipient_email };
+        if (vault_name) payload.vault_name = vault_name;
         if (recipient_email_2) payload.recipient_email_2 = recipient_email_2;
         if (selectedFileObject) payload.file = selectedFileObject;
 
@@ -3297,6 +3466,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
 
             plaintext = data.get("text", "")
             file_obj = data.get("file")
+            vault_name = (data.get("vault_name") or data.get("name") or data.get("title") or "").strip() or None
             recipient_email = (data.get("recipient_email") or data.get("email") or "").strip()
             recipient_email_2 = (data.get("recipient_email_2") or data.get("email_2") or "").strip() or None
             device_id = data.get("device_id") or self.headers.get("X-Device-ID")
@@ -3349,6 +3519,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     recipient_email=recipient_email,
                     recipient_email_2=recipient_email_2,
                     owner_username=current_user,
+                    vault_name=vault_name,
                     device_id=device_id,
                     mode="normal",
                     inactivity_days=inactivity_days,
@@ -3368,6 +3539,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                         "key_bits": key_bits,
                         "has_file": bool(file_obj),
                         "owner_username": current_user,
+                        "vault_name": vault_name,
                         "recipient_email": recipient_email,
                         "recipient_email_2": recipient_email_2,
                         "recipients": all_recipients,
@@ -3722,6 +3894,62 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     "recipient_email_2": updated_rec.get("recipient_email_2"),
                     "recipients": all_recipients,
                     "message": f"Recipient emails for vault '{clean_code}' were successfully updated to '{', '.join(all_recipients)}'."
+                })
+            except Exception as e:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))
+            return
+
+        # Route: Update / Rename custom vault name/label
+        if path in ("/api/update-vault-name", "/api/rename-vault", "/api/update-name"):
+            code = data.get("code")
+            vault_name = (data.get("vault_name") or data.get("name") or data.get("title") or "").strip()
+            key_a = data.get("key_a") or data.get("key")
+            current_user = get_authenticated_user(self)
+
+            if not code:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Missing 'code' parameter in request.")
+                return
+
+            clean_code = str(code).strip()
+            storage_dir = self.server.storage_dir
+            record = storage.load_vault_record(clean_code, storage_dir)
+
+            if record is None:
+                self.send_error_response(HTTPStatus.NOT_FOUND, f"No vault record found for code '{clean_code}'.")
+                return
+
+            owner = record.get("owner_username")
+            authorized = False
+
+            if owner and current_user and current_user.lower() == owner.lower():
+                authorized = True
+            elif key_a:
+                server_key_b = record.get("server_key_b")
+                if server_key_b:
+                    try:
+                        decrypt_split(record["encrypted_text"], str(key_a).strip(), server_key_b.strip())
+                        authorized = True
+                    except Exception:
+                        pass
+                else:
+                    authorized = True
+            elif not owner:
+                authorized = True
+
+            if not authorized:
+                self.send_error_response(
+                    HTTPStatus.UNAUTHORIZED,
+                    "Unauthorized. You must either be logged in as the owner of this vault or provide a valid Key A."
+                )
+                return
+
+            try:
+                updated_rec = storage.update_vault_name(clean_code, vault_name, storage_dir)
+                self.send_json_response(HTTPStatus.OK, {
+                    "status": "success",
+                    "code": clean_code,
+                    "vault_name": updated_rec.get("vault_name"),
+                    "message": f"Vault '{clean_code}' name updated to '{updated_rec.get('vault_name')}'."
                 })
             except Exception as e:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))

@@ -271,6 +271,7 @@ def save_vault_record(
     recipient_email: Optional[str] = None,
     recipient_email_2: Optional[str] = None,
     owner_username: Optional[str] = None,
+    vault_name: Optional[str] = None,
     device_id: Optional[str] = None,
     mode: str = "normal",
     inactivity_days: int = 30,
@@ -279,7 +280,7 @@ def save_vault_record(
 ) -> str:
     """
     Save a new vault record with ciphertext, server key (Key B), primary and secondary recipient emails,
-    owner username, device binding ID, inactivity timeout days, and initial activity timestamp.
+    owner username, custom vault name / label, device binding ID, inactivity timeout days, and initial activity timestamp.
     """
     ensure_storage_dir(storage_dir)
     file_path = get_file_path(code, storage_dir)
@@ -291,6 +292,7 @@ def save_vault_record(
     record = {
         "code": code,
         "mode": mode,
+        "vault_name": vault_name.strip() if vault_name and vault_name.strip() else None,
         "auto_inherit": is_auto,
         "encrypted_text": encrypted_text.strip(),
         "server_key_b": server_key_b,
@@ -309,6 +311,25 @@ def save_vault_record(
         json.dump(record, f, indent=2)
 
     return file_path
+
+
+def update_vault_name(
+    code: str, new_name: Optional[str], storage_dir: str = DEFAULT_STORAGE_DIR
+) -> Dict:
+    """
+    Update the user-assigned custom name / label for an existing vault record.
+    """
+    record = load_vault_record(code, storage_dir)
+    if record is None:
+        raise ValueError(f"No vault record found for code '{code}'.")
+
+    clean_name = new_name.strip() if new_name and new_name.strip() else None
+    record["vault_name"] = clean_name
+    file_path = get_file_path(code, storage_dir)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(record, f, indent=2)
+
+    return record
 
 
 def load_vault_record(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> Optional[Dict]:
@@ -727,6 +748,7 @@ def get_all_vault_statuses(inactivity_days: int = 30, storage_dir: str = DEFAULT
             statuses.append({
                 "code": code,
                 "mode": mode,
+                "vault_name": record.get("vault_name"),
                 "auto_inherit": auto_inherit and rec_inactivity_days > 0,
                 "inactivity_days": rec_inactivity_days,
                 "inactivity_formatted": inactivity_formatted,

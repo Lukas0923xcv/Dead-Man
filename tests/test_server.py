@@ -776,6 +776,82 @@ class TestServerIntegration(unittest.TestCase):
             self.assertEqual(dec_data_inh["status"], "success")
             self.assertEqual(dec_data_inh["decrypted_text"], secret_text)
 
+    def test_custom_vault_name_and_rename_api(self):
+        """
+        Test encrypting a vault with a custom user-assigned name, verifying it in /api/my-vaults,
+        and updating the name via /api/update-vault-name.
+        """
+        user = "named_vault_user"
+        reg_payload = json.dumps({"username": user, "password": "securepassword"}).encode("utf-8")
+        reg_req = Request(f"{self.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            token = json.loads(resp.read().decode("utf-8"))["token"]
+
+        # 1. Create vault with custom name
+        initial_name = "Krypto-Wallet Recovery"
+        enc_payload = json.dumps({
+            "text": "My seed phrase words 123",
+            "recipient_email": "heir@example.ch",
+            "vault_name": initial_name,
+        }).encode("utf-8")
+        enc_req = Request(
+            f"{self.base_url}/api/encrypt",
+            data=enc_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with urlopen(enc_req) as resp:
+            enc_res = json.loads(resp.read().decode("utf-8"))
+            code = enc_res["code"]
+            key_a = enc_res["key_a"]
+            self.assertEqual(enc_res["vault_name"], initial_name)
+
+        # 2. Check /api/my-vaults includes custom name
+        list_req = Request(
+            f"{self.base_url}/api/my-vaults",
+            headers={"Authorization": f"Bearer {token}"},
+            method="GET"
+        )
+        with urlopen(list_req) as resp:
+            vaults_data = json.loads(resp.read().decode("utf-8"))
+            user_vault = next(v for v in vaults_data["vaults"] if v["code"] == code)
+            self.assertEqual(user_vault["vault_name"], initial_name)
+
+        # 3. Rename vault via /api/update-vault-name with auth token
+        new_name = "Krypto & Bankunterlagen 2026"
+        rename_payload = json.dumps({"code": code, "vault_name": new_name}).encode("utf-8")
+        rename_req = Request(
+            f"{self.base_url}/api/update-vault-name",
+            data=rename_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with urlopen(rename_req) as resp:
+            self.assertEqual(resp.status, 200)
+            rename_res = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(rename_res["status"], "success")
+            self.assertEqual(rename_res["vault_name"], new_name)
+
+        # 4. Verify updated name in /api/my-vaults
+        with urlopen(list_req) as resp:
+            vaults_data = json.loads(resp.read().decode("utf-8"))
+            user_vault = next(v for v in vaults_data["vaults"] if v["code"] == code)
+            self.assertEqual(user_vault["vault_name"], new_name)
+
+        # 5. Rename using valid Key A without user token
+        name_via_key_a = "Notfallordner (per Key A umbenannt)"
+        rename_key_a_payload = json.dumps({"code": code, "key_a": key_a, "vault_name": name_via_key_a}).encode("utf-8")
+        rename_key_a_req = Request(
+            f"{self.base_url}/api/update-vault-name",
+            data=rename_key_a_payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urlopen(rename_key_a_req) as resp:
+            self.assertEqual(resp.status, 200)
+            rename_res = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(rename_res["vault_name"], name_via_key_a)
+
 
 if __name__ == "__main__":
     unittest.main()
