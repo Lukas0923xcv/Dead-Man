@@ -298,7 +298,6 @@ MONITOR_HTML = """<!DOCTYPE html>
       border-radius: 50%;
       background: currentColor;
     }
-
     /* Inactivity Badge */
     .inactivity-badge {
       font-family: 'JetBrains Mono', monospace;
@@ -312,6 +311,21 @@ MONITOR_HTML = """<!DOCTYPE html>
       display: inline-flex;
       align-items: center;
       gap: 4px;
+    }
+
+    /* Size Badge */
+    .size-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-bright);
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     /* Countdown display */
@@ -414,6 +428,10 @@ MONITOR_HTML = """<!DOCTYPE html>
         <div class="stat-label">Inherited (Triggered)</div>
         <div class="stat-value" id="stat-inherited" style="color: var(--inherited-badge-text);">0</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Storage Used</div>
+        <div class="stat-value" id="stat-storage" style="color: var(--accent);">0 B</div>
+      </div>
     </div>
 
     <!-- Search & Filter Controls -->
@@ -433,6 +451,7 @@ MONITOR_HTML = """<!DOCTYPE html>
           <tr>
             <th>16-Character Storage Code</th>
             <th>Mode</th>
+            <th>File Size</th>
             <th>Inactivity Window</th>
             <th>Time Left (Dead Man's Switch)</th>
             <th class="hide-mobile">Last Activity / Created</th>
@@ -440,7 +459,7 @@ MONITOR_HTML = """<!DOCTYPE html>
         </thead>
         <tbody id="records-tbody">
           <tr>
-            <td colspan="5" class="empty-state">
+            <td colspan="6" class="empty-state">
               <div class="empty-icon">⏳</div>
               <div>Loading records...</div>
             </td>
@@ -448,7 +467,9 @@ MONITOR_HTML = """<!DOCTYPE html>
         </tbody>
       </table>
     </div>
+  </div>
 
+  <div class="container">
     <!-- Footer -->
     <div class="footer">
       <span id="last-updated-text">Last updated: Just now</span>
@@ -488,6 +509,7 @@ MONITOR_HTML = """<!DOCTYPE html>
         document.getElementById('stat-total').textContent = data.total_count || recordsData.length;
         document.getElementById('stat-normal').textContent = data.normal_count || 0;
         document.getElementById('stat-inherited').textContent = data.inherited_count || 0;
+        document.getElementById('stat-storage').textContent = data.total_storage_formatted || '0 B';
 
         renderTable();
         document.getElementById('last-updated-text').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
@@ -531,7 +553,7 @@ MONITOR_HTML = """<!DOCTYPE html>
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" class="empty-state">
+            <td colspan="6" class="empty-state">
               <div class="empty-icon">📭</div>
               <div>${recordsData.length === 0 ? 'No encrypted vault records found in storage.' : 'No records match the filter criteria.'}</div>
             </td>
@@ -580,6 +602,9 @@ MONITOR_HTML = """<!DOCTYPE html>
           ? (isDisabled ? 'Auto-inheritance stopped' : (r.deadline_at ? 'Trigger Deadline: ' + new Date(r.deadline_at).toLocaleDateString() : ''))
           : (r.inherited_at ? 'Triggered at: ' + new Date(r.inherited_at).toLocaleDateString() : 'Key B Dispatched');
 
+        const fileSizeFormatted = r.file_size_formatted || '0 B';
+        const fileSizeBytes = r.file_size_bytes || 0;
+
         html += `
           <tr>
             <td>
@@ -589,6 +614,9 @@ MONITOR_HTML = """<!DOCTYPE html>
               </span>
             </td>
             <td>${modeBadge}</td>
+            <td>
+              <span class="size-badge" title="${fileSizeBytes.toLocaleString()} bytes">📦 ${fileSizeFormatted}</span>
+            </td>
             <td>
               <span class="inactivity-badge" style="${isDisabled ? 'color: var(--text-muted); border-color: var(--border);' : ''}">⏱ ${inactivityDaysText}</span>
             </td>
@@ -667,6 +695,7 @@ class MonitorRequestHandler(BaseHTTPRequestHandler):
             )
             normal_count = sum(1 for r in records if r.get("mode") == "normal")
             inherited_count = sum(1 for r in records if r.get("mode") == "inherited")
+            storage_stats = storage.get_storage_stats(storage_dir=storage_dir)
 
             payload = {
                 "status": "ok",
@@ -676,6 +705,8 @@ class MonitorRequestHandler(BaseHTTPRequestHandler):
                 "total_count": len(records),
                 "normal_count": normal_count,
                 "inherited_count": inherited_count,
+                "total_storage_bytes": storage_stats["total_bytes"],
+                "total_storage_formatted": storage_stats["total_size_formatted"],
                 "records": records,
                 "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             }

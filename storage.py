@@ -617,10 +617,44 @@ def format_duration(seconds: float) -> str:
     return " ".join(parts)
 
 
+def format_file_size(num_bytes: int) -> str:
+    """Format byte count into human-readable size string (e.g. 512 B, 24.5 KB, 1.2 MB)."""
+    if num_bytes < 0:
+        return "0 B"
+    size = float(num_bytes)
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if size < 1024.0 or unit == "TB":
+            if unit == "B":
+                return f"{int(size)} B"
+            return f"{size:.1f} {unit}"
+        size /= 1024.0
+    return f"{size:.1f} PB"
+
+
+def get_storage_stats(storage_dir: str = DEFAULT_STORAGE_DIR) -> Dict:
+    """Calculate total storage size in bytes and file count across vault records."""
+    ensure_storage_dir(storage_dir)
+    total_bytes = 0
+    total_files = 0
+    for filename in os.listdir(storage_dir):
+        if filename.endswith(".json"):
+            fp = os.path.join(storage_dir, filename)
+            try:
+                total_bytes += os.path.getsize(fp)
+                total_files += 1
+            except OSError:
+                pass
+    return {
+        "total_files": total_files,
+        "total_bytes": total_bytes,
+        "total_size_formatted": format_file_size(total_bytes),
+    }
+
+
 def get_all_vault_statuses(inactivity_days: int = 30, storage_dir: str = DEFAULT_STORAGE_DIR) -> List[Dict]:
     """
     Scan all vault files and return their operational status, including mode,
-    deadlines, countdowns, and registered recipient emails.
+    deadlines, countdowns, file sizes, and registered recipient emails.
     """
     ensure_storage_dir(storage_dir)
     statuses = []
@@ -631,6 +665,8 @@ def get_all_vault_statuses(inactivity_days: int = 30, storage_dir: str = DEFAULT
             continue
         file_path = os.path.join(storage_dir, filename)
         try:
+            file_size_bytes = os.path.getsize(file_path)
+            file_size_formatted = format_file_size(file_size_bytes)
             with open(file_path, "r", encoding="utf-8") as f:
                 record = json.load(f)
 
@@ -704,6 +740,8 @@ def get_all_vault_statuses(inactivity_days: int = 30, storage_dir: str = DEFAULT
                 "recipient_email": record.get("recipient_email"),
                 "recipient_email_2": record.get("recipient_email_2"),
                 "recipients": recipients,
+                "file_size_bytes": file_size_bytes,
+                "file_size_formatted": file_size_formatted,
             })
         except Exception:
             continue

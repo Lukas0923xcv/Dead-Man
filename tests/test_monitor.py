@@ -58,11 +58,20 @@ class TestMonitorStorage(unittest.TestCase):
         self.assertNotIn("server_key_b", norm_status)
         self.assertNotIn("encrypted_text", norm_status)
         self.assertTrue(norm_status["has_recipient_email"])
+        self.assertGreater(norm_status["file_size_bytes"], 0)
+        self.assertIn("B", norm_status["file_size_formatted"])
 
         inht_status = next(s for s in statuses if s["code"] == "INHT5678")
         self.assertEqual(inht_status["mode"], "inherited")
         self.assertIn("Purge", inht_status["time_left_formatted"])
         self.assertGreater(inht_status["seconds_remaining"], 0)
+        self.assertGreater(inht_status["file_size_bytes"], 0)
+
+        # Test storage statistics helper
+        stats = storage.get_storage_stats(storage_dir=self.test_dir)
+        self.assertEqual(stats["total_files"], 2)
+        self.assertGreater(stats["total_bytes"], 0)
+        self.assertIn("B", stats["total_size_formatted"])
 
 
 class TestMonitorServerIntegration(unittest.TestCase):
@@ -105,6 +114,8 @@ class TestMonitorServerIntegration(unittest.TestCase):
             content = resp.read().decode("utf-8")
             self.assertIn("SecureVault Monitor", content)
             self.assertIn("Dead Man's Switch Status Dashboard", content)
+            self.assertIn("Total Storage Used", content)
+            self.assertIn("File Size", content)
 
     def test_api_status_json_endpoint(self):
         url = f"http://127.0.0.1:{self.port}/api/status"
@@ -115,9 +126,13 @@ class TestMonitorServerIntegration(unittest.TestCase):
             self.assertEqual(data["total_count"], 1)
             self.assertEqual(data["normal_count"], 1)
             self.assertEqual(data["inherited_count"], 0)
+            self.assertGreater(data["total_storage_bytes"], 0)
+            self.assertIn("B", data["total_storage_formatted"])
             self.assertEqual(len(data["records"]), 1)
             self.assertEqual(data["records"][0]["code"], "CODE9999")
             self.assertEqual(data["records"][0]["mode"], "normal")
+            self.assertGreater(data["records"][0]["file_size_bytes"], 0)
+            self.assertIn("B", data["records"][0]["file_size_formatted"])
 
     def test_health_endpoint(self):
         url = f"http://127.0.0.1:{self.port}/health"
