@@ -269,6 +269,7 @@ def save_vault_record(
     encrypted_text: str,
     server_key_b: Optional[str],
     recipient_email: Optional[str] = None,
+    recipient_email_2: Optional[str] = None,
     owner_username: Optional[str] = None,
     device_id: Optional[str] = None,
     mode: str = "normal",
@@ -277,7 +278,7 @@ def save_vault_record(
     storage_dir: str = DEFAULT_STORAGE_DIR,
 ) -> str:
     """
-    Save a new vault record with ciphertext, server key (Key B), recipient email,
+    Save a new vault record with ciphertext, server key (Key B), primary and secondary recipient emails,
     owner username, device binding ID, inactivity timeout days, and initial activity timestamp.
     """
     ensure_storage_dir(storage_dir)
@@ -296,6 +297,7 @@ def save_vault_record(
         "owner_username": owner_username.strip() if owner_username else None,
         "device_id": device_id.strip() if device_id else None,
         "recipient_email": recipient_email.strip() if recipient_email else None,
+        "recipient_email_2": recipient_email_2.strip() if recipient_email_2 else None,
         "inactivity_days": final_days,
         "created_at": now_iso,
         "last_active_at": now_iso,
@@ -355,11 +357,35 @@ def touch_record_activity(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> 
     return True
 
 
-def update_recipient_email(
-    code: str, new_email: str, storage_dir: str = DEFAULT_STORAGE_DIR
+def get_record_recipients(record: Dict) -> List[str]:
+    """Extract list of clean recipient emails from a vault record."""
+    if not record or not isinstance(record, dict):
+        return []
+    recipients: List[str] = []
+    # 1. Primary recipient
+    r1 = (record.get("recipient_email") or "").strip()
+    if r1 and "@" in r1 and "." in r1.split("@")[-1]:
+        recipients.append(r1)
+
+    # 2. Secondary recipient
+    r2 = (record.get("recipient_email_2") or "").strip()
+    if r2 and "@" in r2 and "." in r2.split("@")[-1] and r2.lower() != r1.lower():
+        recipients.append(r2)
+
+    # 3. List format support
+    for r in record.get("recipient_emails", []):
+        r_clean = str(r).strip()
+        if r_clean and "@" in r_clean and "." in r_clean.split("@")[-1] and r_clean.lower() not in [x.lower() for x in recipients]:
+            recipients.append(r_clean)
+
+    return recipients
+
+
+def update_recipient_emails(
+    code: str, email_1: str, email_2: Optional[str] = None, storage_dir: str = DEFAULT_STORAGE_DIR
 ) -> Dict:
     """
-    Update the recipient email address for an existing vault record in Normal mode.
+    Update primary and secondary recipient email addresses for an existing vault record in Normal mode.
     """
     record = load_vault_record(code, storage_dir)
     if record is None:
@@ -368,16 +394,29 @@ def update_recipient_email(
     if record.get("mode") == "inherited":
         raise ValueError("Cannot change recipient email: Vault has already been transferred to Inherited mode.")
 
-    clean_email = (new_email or "").strip()
-    if not clean_email or "@" not in clean_email or "." not in clean_email.split("@")[-1]:
-        raise ValueError("A valid email address with '@' and domain is required.")
+    clean_email_1 = (email_1 or "").strip()
+    if not clean_email_1 or "@" not in clean_email_1 or "." not in clean_email_1.split("@")[-1]:
+        raise ValueError("A valid primary email address with '@' and domain is required.")
 
-    record["recipient_email"] = clean_email
+    clean_email_2 = (email_2 or "").strip() if email_2 else None
+    if clean_email_2:
+        if "@" not in clean_email_2 or "." not in clean_email_2.split("@")[-1]:
+            raise ValueError("The secondary email address must be valid with '@' and domain, or left empty.")
+
+    record["recipient_email"] = clean_email_1
+    record["recipient_email_2"] = clean_email_2
     file_path = get_file_path(code, storage_dir)
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2)
 
     return record
+
+
+def update_recipient_email(
+    code: str, new_email: str, storage_dir: str = DEFAULT_STORAGE_DIR
+) -> Dict:
+    """Legacy helper for updating single recipient email."""
+    return update_recipient_emails(code, email_1=new_email, email_2=None, storage_dir=storage_dir)
 
 
 def touch_device_activity(device_id: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> int:
@@ -526,14 +565,14 @@ def purge_expired_inherited_records(
     return purged_codes
 
 
-def switch_to_inherited_mode(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> Tuple[str, str, Optional[str]]:
+def switch_to_inherited_mode(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> Tuple[str, str, List[str]]:
     """
     Switch a vault record to Inherited Mode:
-    - Reads and extracts the stored server Key B and recipient email.
+    - Reads and extracts the stored server Key B and all registered recipient emails.
     - Permanently deletes server Key B AND device_id binding from the file.
     - Sets mode to 'inherited'.
     
-    :return: (key_b, encrypted_text, recipient_email)
+    :return: (key_b, encrypted_text, recipients_list)
     :raises ValueError: If code not found or already in inherited mode.
     """
     record = load_vault_record(code, storage_dir)
@@ -544,7 +583,7 @@ def switch_to_inherited_mode(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) 
         raise ValueError(f"Record '{code}' is already in Inherited mode. Server key was already released and deleted.")
 
     key_b = record["server_key_b"]
-    recipient_email = record.get("recipient_email")
+    recipients = get_record_recipients(record)
 
     # Delete server key B AND device_id binding permanently from file
     record["mode"] = "inherited"
@@ -556,7 +595,7 @@ def switch_to_inherited_mode(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) 
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2)
 
-    return key_b, record["encrypted_text"], recipient_email
+    return key_b, record["encrypted_text"], recipients
 
 
 def format_duration(seconds: float) -> str:
@@ -578,18 +617,16 @@ def format_duration(seconds: float) -> str:
     return " ".join(parts)
 
 
-def get_all_vault_statuses(
-    inactivity_days: int = 30, storage_dir: str = DEFAULT_STORAGE_DIR
-) -> List[Dict]:
+def get_all_vault_statuses(inactivity_days: int = 30, storage_dir: str = DEFAULT_STORAGE_DIR) -> List[Dict]:
     """
-    Scan all vault records and return a sanitized list of statuses for monitoring.
-    Contains code, mode, per-record inactivity window, time remaining, and timestamps without leaking ciphertext or keys.
+    Scan all vault files and return their operational status, including mode,
+    deadlines, countdowns, and registered recipient emails.
     """
     ensure_storage_dir(storage_dir)
     statuses = []
     now = datetime.datetime.now(datetime.timezone.utc)
 
-    for filename in sorted(os.listdir(storage_dir)):
+    for filename in os.listdir(storage_dir):
         if not filename.endswith(".json"):
             continue
         file_path = os.path.join(storage_dir, filename)
@@ -599,17 +636,18 @@ def get_all_vault_statuses(
 
             code = record.get("code") or filename[:-5]
             mode = record.get("mode", "normal")
+            auto_inherit = record.get("auto_inherit", True)
+            rec_inactivity_days = int(record.get("inactivity_days", inactivity_days))
             created_at = record.get("created_at")
-            last_active_str = record.get("last_active_at") or created_at
+            last_active_str = record.get("last_active_at")
             inherited_at = record.get("inherited_at")
             killed_at = record.get("killed_at")
-            has_recipient = bool(record.get("recipient_email"))
-            auto_inherit = record.get("auto_inherit", True)
-            rec_inactivity_days = int(record.get("inactivity_days") if "inactivity_days" in record else inactivity_days)
+            recipients = get_record_recipients(record)
+            has_recipient = len(recipients) > 0
 
-            seconds_remaining = 0
-            time_left_formatted = "N/A"
             deadline_iso = None
+            seconds_remaining = 0
+            time_left_formatted = "—"
 
             if mode == "normal":
                 if last_active_str:
@@ -664,6 +702,8 @@ def get_all_vault_statuses(
                 "time_left_formatted": time_left_formatted,
                 "has_recipient_email": has_recipient,
                 "recipient_email": record.get("recipient_email"),
+                "recipient_email_2": record.get("recipient_email_2"),
+                "recipients": recipients,
             })
         except Exception:
             continue

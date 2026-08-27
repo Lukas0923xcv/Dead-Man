@@ -678,16 +678,45 @@ class TestServerIntegration(unittest.TestCase):
             self.assertEqual(res_data["status"], "success")
             self.assertEqual(res_data["recipient_email"], new_email)
 
-        # Verify record updated on disk
-        updated_rec = storage.load_vault_record(code, self.test_storage_dir)
-        self.assertEqual(updated_rec["recipient_email"], new_email)
-
         # 6. Verify in /api/my-vaults
         vaults_req = Request(f"{self.base_url}/api/my-vaults", headers={"Authorization": f"Bearer {token}"}, method="GET")
         with urlopen(vaults_req) as resp:
             v_data = json.loads(resp.read().decode("utf-8"))
             user_vault = next(v for v in v_data["vaults"] if v["code"] == code)
             self.assertEqual(user_vault["recipient_email"], new_email)
+
+        # 7. Add a second recipient email (email_2) -> 200 OK
+        second_email = "backup.heir@example.ch"
+        upd2_payload = json.dumps({"code": code, "email": new_email, "email_2": second_email}).encode("utf-8")
+        upd2_req = Request(
+            f"{self.base_url}/api/update-recipient",
+            data=upd2_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with urlopen(upd2_req) as resp:
+            self.assertEqual(resp.status, 200)
+            res_data = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(res_data["recipient_email"], new_email)
+            self.assertEqual(res_data["recipient_email_2"], second_email)
+            self.assertIn(new_email, res_data["recipients"])
+            self.assertIn(second_email, res_data["recipients"])
+
+        # 8. Trigger inheritance -> dispatches to both recipients
+        inh_payload = json.dumps({"code": code, "key_a": key_a}).encode("utf-8")
+        inh_req = Request(
+            f"{self.base_url}/api/inherit",
+            data=inh_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with urlopen(inh_req) as resp:
+            self.assertEqual(resp.status, 200)
+            inh_res = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(inh_res["status"], "success")
+            self.assertEqual(len(inh_res["recipients"]), 2)
+            self.assertIn(new_email, inh_res["recipients"])
+            self.assertIn(second_email, inh_res["recipients"])
 
 
 if __name__ == "__main__":

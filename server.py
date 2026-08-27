@@ -1420,8 +1420,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </p>
 
             <div class="form-group">
-              <label for="update-email-input" data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</label>
-              <input type="email" id="update-email-input" required placeholder="empfaenger@example.com">
+              <label for="update-email-input" data-i18n="enc_label_email">1. Empfänger-E-Mail (Hauptempfänger, Pflichtfeld)</label>
+              <input type="email" id="update-email-input" required placeholder="empfaenger1@example.com">
+            </div>
+
+            <div class="form-group">
+              <label for="update-email-input-2" data-i18n="enc_label_email_2">2. Empfänger-E-Mail (Zweiter Empfänger, Optional)</label>
+              <input type="email" id="update-email-input-2" placeholder="empfaenger2@example.com (optional)">
             </div>
 
             <div id="update-email-key-group" class="form-group" style="display: none;">
@@ -1506,12 +1511,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
           <div class="form-group" id="recipient-email-group">
             <label for="recipient-email">
-              <span data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</span> <span style="color: var(--danger, #f85149); font-weight: 700;">*</span>
+              <span data-i18n="enc_label_email">1. Empfänger-E-Mail (Hauptempfänger, Pflichtfeld)</span> <span style="color: var(--danger, #f85149); font-weight: 700;">*</span>
             </label>
-            <input type="email" id="recipient-email" placeholder="recipient@example.com" required>
-            <div id="enc-email-warning-box" style="margin-top: 6px; font-size: 12px; line-height: 1.45; color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 6px;">
+            <input type="email" id="recipient-email" placeholder="erbe1@example.com" required>
+            
+            <label for="recipient-email-2" style="margin-top: 10px; display: block;">
+              <span data-i18n="enc_label_email_2">2. Empfänger-E-Mail (Zweiter Empfänger, Optional)</span>
+            </label>
+            <input type="email" id="recipient-email-2" placeholder="erbe2@example.com (optional)">
+
+            <div id="enc-email-warning-box" style="margin-top: 8px; font-size: 12px; line-height: 1.45; color: #f85149; background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 6px;">
               <span style="font-size: 14px; line-height: 1;">⚠️</span>
-              <span id="enc-email-warning-text" data-i18n="enc_email_warning"><strong>Kryptographische Nachlass-Übergabe:</strong> Nach 30 Tagen Inaktivität wird Schlüssel B an diesen Empfänger gesendet. Das Abruffrontfenster beträgt anschließend 30 Tage, bevor alle Daten aus Datenschutzgründen unwiderruflich gelöscht werden.</span>
+              <span id="enc-email-warning-text" data-i18n="enc_email_warning"><strong>Kryptographische Nachlass-Übergabe:</strong> Nach 30 Tagen Inaktivität wird Schlüssel B an alle hinterlegten Empfänger gesendet. Das Abruffrontfenster beträgt anschließend 30 Tage, bevor alle Daten aus Datenschutzgründen unwiderruflich gelöscht werden.</span>
             </div>
           </div>
 
@@ -1788,8 +1799,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         enc_hint_file: "(Optional — Ende-zu-Ende verschlüsselt)",
         dropzone_text: "Klicken zum Auswählen oder Datei hierher ziehen",
         dropzone_hint: "Dokumente, PDFs, Bilder, Archive — jedes Dateiformat",
-        enc_label_email: "Empfänger-E-Mail für Notfallübergabe (Pflichtfeld)",
-        enc_email_warning: "<strong>Kryptographische Nachlass-Übergabe:</strong> Nach 30 Tagen Inaktivität wird Schlüssel B an diesen Empfänger gesendet. Das Abruffrontfenster beträgt anschließend 30 Tage, bevor alle Daten aus Datenschutzgründen unwiderruflich gelöscht werden.",
+        enc_label_email: "1. Empfänger-E-Mail (Hauptempfänger, Pflichtfeld)",
+        enc_label_email_2: "2. Empfänger-E-Mail (Zweiter Empfänger, Optional)",
+        enc_email_warning: "<strong>Kryptographische Nachlass-Übergabe:</strong> Nach 30 Tagen Inaktivität wird Schlüssel B an alle hinterlegten Empfänger gesendet. Das Abruffrontfenster beträgt anschließend 30 Tage, bevor alle Daten aus Datenschutzgründen unwiderruflich gelöscht werden.",
         btn_encrypt_save: "Verschlüsseln & Speichern",
         enc_success: "Erfolgreich gespeichert. Auf Ihrem Konto benötigen Sie zur Entschlüsselung nur den <strong>Speichercode</strong> und <strong>Schlüssel A</strong>.",
         label_storage_code: "Speichercode",
@@ -1828,89 +1840,61 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         delete_modal_confirm: "🗑️ Unwiderruflich löschen",
         delete_success_msg: "Tresor & Datei wurden erfolgreich und unwiderruflich vom Server gelöscht.",
         
+        update_email_modal_title: "Empfänger-E-Mails verwalten & ändern",
+        update_email_modal_desc: "Hinterlegen Sie bis zu zwei Empfänger-E-Mail-Adressen für den Notfallabruf für den Tresor",
+        btn_change_email: "E-Mails verwalten",
+        btn_save_email: "Speichern",
+        update_email_success_msg: "Empfänger-E-Mails wurden erfolgreich aktualisiert.",
+        
         btn_copy: "Kopieren",
         btn_copied: "Kopiert",
         footer_text: "SecureVault • Zero-Knowledge Dead Man's Switch • Schweiz",
         
         err_fill_payload: "Bitte Text eingeben oder eine Datei anhängen.",
-        err_code_key_req: "Sowohl der Speichercode sowie Schlüssel A sind erforderlich.",
-        err_code_req: "Bitte den 16-stelligen Speichercode eingeben.",
-        err_email_req: "Bitte eine gültige Empfänger-E-Mail-Adresse eingeben (Pflichtfeld zur Notfallübergabe).",
+        err_code_key_req: "Code und Schlüssel A sind erforderlich.",
+        err_email_req: "Empfänger-E-Mail ist zwingend erforderlich.",
+        err_code_keya_req: "Code und Schlüssel A sind zwingend erforderlich.",
+        err_auth_user_pass: "Benutzername und Passwort sind erforderlich.",
         err_pwd_mismatch: "Die Passwörter stimmen nicht überein."
       },
       en: {
+        page_title: "SecureVault • Zero-Knowledge Vault (Switzerland)",
         nav_overview: "Overview",
         nav_encrypt: "Encrypt",
         nav_decrypt: "Decrypt",
-        nav_inherit: "Inheritance",
+        nav_inherit: "Handover",
         nav_vaults: "My Vaults",
         nav_info: "Info",
         nav_login: "Sign In",
         nav_register: "Register",
         nav_logout: "Sign Out",
         
-        hero_title: "Zero-Knowledge Digital Vault & Dead Man's Switch",
-        hero_desc: "Cryptographic emergency custody for confidential files and digital inheritances. SecureVault is engineered for automated emergency handover: all encrypted data is permanently purged 30 days following key release.",
+        hero_badge: "🇨🇭 Swiss Cryptographic Infrastructure • Zero-Knowledge • 256-Bit Split-Key",
+        hero_title: "Zero-Knowledge Digital Vault & Cryptographic Custody",
+        hero_desc: "Securely store confidential files, credentials, documents, and digital inheritances. End-to-end encrypted with 256-bit split keys in Switzerland under strict data privacy regulations.",
         btn_open_vault: "Open Vault →",
-        btn_more_info: "More Information",
+        btn_more_info: "How it works (Info)",
         
-        hl1_title: "Dual-Key Split (256-Bit)",
-        hl1_desc: "Neither Key A nor Key B alone can decrypt.",
-        hl2_title: "Swiss Zero-Knowledge",
-        hl2_desc: "Server stores 0 KB plaintext. Absolute confidentiality.",
-        hl3_title: "Dead Man's Switch & Auto-Purge",
-        hl3_desc: "Key release upon inactivity. Data permanently purged 30 days after handover.",
+        preview_title: "Dual-Key Splitting Architecture",
+        preview_desc: "Zero-Knowledge: The server only holds an incomplete key fragment. Plaintext data and attached files are never visible to the server or operators.",
+        preview_badge: "🇨🇭 Swiss Hosted",
         
-        modal_title: "Architecture & How It Works",
-        flow_title: "Cryptographic Custody Pipeline",
-        step1_title: "Input Secret",
-        step1_desc: "Type confidential text or attach sensitive documents.",
-        step2_title: "Split-Key Generation",
-        step2_desc: "Generation of independent 256-bit Key A and Key B.",
-        step3_title: "Zero-Knowledge Encryption",
-        step3_desc: "End-to-end client-side encryption in browser memory before storage.",
-        step4_title: "Retrieval / Handover",
-        step4_desc: "Instant device decryption or heir handover with a 30-day retrieval window.",
+        box1_title: "1. 256-Bit Split Encryption",
+        box1_text: "Every piece of data or attached file is encrypted client-side using AES-256-GCM. The master key is split into two independent parts: Key A (yours) and Key B (server).",
+        box2_title: "2. Zero-Knowledge Custody",
+        box2_text: "The server only holds an incomplete key fragment (Key B). Neither the server nor operators can read, inspect, or reconstruct your files without Key A.",
+        box3_title: "3. 30-Day Dead Man's Switch",
+        box3_text: "30 days of inactivity automatically dispatches Key B to your registered heir. Once handed over or disconnected, a 30-day retrieval window begins before all data is permanently purged.",
+        box4_title: "4. Swiss Hosting & Privacy",
+        box4_text: "All servers and storage infrastructure operate strictly within Switzerland under highest cryptographic security standards and strict Swiss privacy protection.",
         
-        feat1_title: "Dual-Key Split (256-Bit)",
-        feat1_desc: "Every record is partitioned into two cryptographic key shares (A & B). Only their combination unlocks the original data.",
-        feat2_title: "Account-Bound Seamless Decryption",
-        feat2_desc: "On your authenticated account, Key B is auto-applied seamlessly. You only need your Storage Code and Key A to decrypt.",
-        feat3_title: "30-Day Inactivity Switch & 30-Day Auto-Purge",
-        feat3_desc: "If no owner activity is registered for 30 days, Key B is automatically dispatched to the designated recipient. To safeguard privacy, all encrypted data is permanently deleted 30 days after handover.",
-        feat4_title: "Encrypted File Attachments",
-        feat4_desc: "Attach sensitive PDFs, documents, or credentials with 1-click in-browser decryption and direct download.",
-        feat5_title: "Zero-Knowledge Storage",
-        feat5_desc: "File payloads, notes, and metadata are encrypted prior to transmission. Server operators have zero visibility into your data.",
-        feat6_title: "Swiss Privacy & Jurisdiction",
-        feat6_desc: "Operated under strict Swiss data protection principles. Completely private with zero trackers and zero telemetry.",
-        
-        spec_enc: "Encryption:",
-        spec_split: "Key Split:",
-        spec_plain: "Plaintext:",
-        spec_plain_val: "0 KB Stored",
-        spec_inactivity: "Inactivity:",
-        spec_inactivity_val: "30 Days",
-        spec_juris: "Jurisdiction:",
-        spec_juris_val: "Switzerland",
+        auth_guard_title: "Authentication Required",
+        auth_guard_desc: "To encrypt confidential data, files, or view your saved vaults, please sign in or create an account.",
+        btn_login_guard: "Sign In",
+        btn_register_guard: "Create Account",
         
         tab_encrypt: "Encrypt",
         tab_decrypt: "Decrypt",
-        tab_inherit: "Inheritance",
-        
-        auth_modal_title_login: "Sign in to SecureVault",
-        auth_modal_title_register: "Create a Secure Account",
-        auth_tab_login: "Sign In",
-        auth_tab_register: "Register",
-        auth_label_username: "Username",
-        auth_ph_username: "e.g. alice",
-        auth_label_password: "Password",
-        auth_ph_password: "••••••••",
-        auth_label_password_confirm: "Confirm Password",
-        auth_btn_login: "Sign In",
-        auth_btn_register: "Create Account",
-        auth_toggle_to_register: "Don't have an account? Register now →",
-        auth_toggle_to_login: "Already have an account? Sign in →",
         tab_inherit: "Handover",
         
         enc_title: "Encrypt & Store Confidentially",
@@ -1921,8 +1905,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         dropzone_drag: "Drag & drop file here, or",
         dropzone_browse: "Browse",
         dropzone_hint: "Documents, PDFs, images, archives — any format supported",
-        enc_label_email: "Recipient Email for Emergency Handover (Required)",
-        enc_email_warning: "<strong>Cryptographic Emergency Handover:</strong> Key B is automatically dispatched to this recipient after 30 days of inactivity. A 30-day retrieval window follows before all data is permanently purged.",
+        enc_label_email: "1. Primary Recipient Email (Required)",
+        enc_label_email_2: "2. Secondary Recipient Email (Optional)",
+        enc_email_warning: "<strong>Cryptographic Emergency Handover:</strong> Key B is automatically dispatched to all registered recipients after 30 days of inactivity. A 30-day retrieval window follows before all data is permanently purged.",
         btn_encrypt_save: "Encrypt & Store",
         enc_success: "Successfully stored. On your account, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
         label_storage_code: "Storage Code",
@@ -1961,11 +1946,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         delete_modal_confirm: "🗑️ Delete Permanently",
         delete_success_msg: "Vault and file were permanently deleted from the server.",
         
-        update_email_modal_title: "Change Recipient Email",
-        update_email_modal_desc: "Specify the new recipient email address for vault",
-        btn_change_email: "Change Email",
+        update_email_modal_title: "Manage & Change Recipient Emails",
+        update_email_modal_desc: "Specify up to two recipient email addresses for emergency handover for vault",
+        btn_change_email: "Manage Emails",
         btn_save_email: "Save",
-        update_email_success_msg: "Recipient email updated successfully.",
+        update_email_success_msg: "Recipient emails updated successfully.",
         
         btn_copy: "Copy",
         btn_copied: "Copied",
@@ -2162,15 +2147,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           let statusClass = 'active';
           let statusText = currentLang === 'de' ? 'Aktiv (Geschützt)' : 'Active (Secured)';
           let metaHtml = '';
-          const recipient = v.recipient_email
-            ? `✉️ ${v.recipient_email}`
-            : (v.has_recipient_email ? (currentLang === 'de' ? '✉️ Empfänger hinterlegt' : '✉️ Recipient registered') : '—');
+          let recipientHtml = '—';
+          if (v.recipients && v.recipients.length > 0) {
+            recipientHtml = v.recipients.map(r => `✉️ ${r}`).join(' • ');
+          } else if (v.recipient_email) {
+            recipientHtml = `✉️ ${v.recipient_email}${v.recipient_email_2 ? ' • ✉️ ' + v.recipient_email_2 : ''}`;
+          } else if (v.has_recipient_email) {
+            recipientHtml = currentLang === 'de' ? '✉️ Empfänger hinterlegt' : '✉️ Recipient registered';
+          }
 
           if (v.mode === 'inherited') {
             statusClass = 'inherited';
             statusText = currentLang === 'de' ? 'Nachlass ausgelöst' : 'Inherited Mode';
             metaHtml = `
-              <span class="vault-meta-item">📧 <strong>${recipient}</strong></span>
+              <span class="vault-meta-item">📧 <strong>${recipientHtml}</strong></span>
               <span class="vault-meta-item" style="color: #d29922;">⚠️ <strong>${currentLang === 'de' ? 'Schlüssel B übergeben' : 'Key B released'}</strong></span>
             `;
           } else if (v.mode === 'stopped') {
@@ -2183,7 +2173,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             // Normal mode: Active vault on logged-in account
             metaHtml = `
               <span class="vault-meta-item">🛡️ <strong>${currentLang === 'de' ? 'Dead-Man-Switch: 30 Tage Inaktivitäts-Intervall' : 'Dead-Man-Switch: 30-Day Inactivity Interval'}</strong></span>
-              <span class="vault-meta-item">📧 <strong>${recipient}</strong></span>
+              <span class="vault-meta-item">📧 <strong>${recipientHtml}</strong></span>
             `;
           }
 
@@ -2198,7 +2188,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="vault-actions-row">
               <button class="btn-vault-action primary" onclick="openDecryptForCode('${v.code}')">🔓 ${currentLang === 'de' ? 'Entschlüsseln' : 'Decrypt'}</button>
               ${v.mode === 'normal' ? `
-                <button class="btn-vault-action" onclick="openUpdateEmailModal('${v.code}', '${v.recipient_email || ''}')">✉️ ${currentLang === 'de' ? 'E-Mail ändern' : 'Change Email'}</button>
+                <button class="btn-vault-action" onclick="openUpdateEmailModal('${v.code}', '${v.recipient_email || ''}', '${v.recipient_email_2 || ''}')">✉️ ${currentLang === 'de' ? 'E-Mails verwalten' : 'Manage Emails'}</button>
                 <button class="btn-vault-action" onclick="openInheritForCode('${v.code}')">🚀 ${currentLang === 'de' ? 'Nachlass auslösen' : 'Trigger Handover'}</button>
                 <button class="btn-vault-action danger" onclick="openStopInheritForCode('${v.code}')">🛑 ${currentLang === 'de' ? 'Verbindung trennen' : 'Disconnect'}</button>
               ` : ''}
@@ -2218,12 +2208,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     let pendingEmailCode = null;
 
-    function openUpdateEmailModal(code, currentEmail) {
+    function openUpdateEmailModal(code, currentEmail1, currentEmail2) {
       pendingEmailCode = code;
       const codeDisplay = document.getElementById('update-email-code-display');
       if (codeDisplay) codeDisplay.textContent = code;
-      const emailInput = document.getElementById('update-email-input');
-      if (emailInput) emailInput.value = currentEmail || '';
+      const emailInput1 = document.getElementById('update-email-input');
+      if (emailInput1) emailInput1.value = currentEmail1 || '';
+      const emailInput2 = document.getElementById('update-email-input-2');
+      if (emailInput2) emailInput2.value = currentEmail2 || '';
       const errBox = document.getElementById('update-email-error');
       if (errBox) errBox.style.display = 'none';
       const succBox = document.getElementById('update-email-success');
@@ -2236,9 +2228,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       document.getElementById('update-email-modal').style.display = 'flex';
       setTimeout(() => {
-        if (emailInput) {
-          emailInput.focus();
-          emailInput.select();
+        if (emailInput1) {
+          emailInput1.focus();
+          emailInput1.select();
         }
       }, 100);
     }
@@ -2260,15 +2252,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const errBox = document.getElementById('update-email-error');
       const succBox = document.getElementById('update-email-success');
       const btn = document.getElementById('update-email-submit-btn');
-      const newEmail = document.getElementById('update-email-input').value.trim();
+      const newEmail1 = document.getElementById('update-email-input').value.trim();
+      const newEmail2 = document.getElementById('update-email-input-2').value.trim();
       const keyAInput = document.getElementById('update-email-key-a');
       const keyA = keyAInput ? keyAInput.value.trim() : '';
 
       errBox.style.display = 'none';
       succBox.style.display = 'none';
 
-      if (!newEmail || !newEmail.includes('@') || !newEmail.includes('.')) {
-        errBox.textContent = I18N[currentLang].err_email_req || 'Gültige E-Mail-Adresse erforderlich.';
+      if (!newEmail1 || !newEmail1.includes('@') || !newEmail1.includes('.')) {
+        errBox.textContent = I18N[currentLang].err_email_req || 'Gültige primäre E-Mail-Adresse erforderlich.';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      if (newEmail2 && (!newEmail2.includes('@') || !newEmail2.includes('.'))) {
+        errBox.textContent = currentLang === 'de' ? 'Die 2. Empfänger-E-Mail ist ungültig.' : 'The secondary recipient email is invalid.';
         errBox.style.display = 'block';
         return;
       }
@@ -2281,7 +2280,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = 'Bearer ' + token;
 
-        const payload = { code: pendingEmailCode, email: newEmail };
+        const payload = { code: pendingEmailCode, email: newEmail1, email_2: newEmail2 };
         if (keyA) payload.key_a = keyA;
 
         const res = await fetch('/api/update-recipient', {
@@ -2292,7 +2291,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to update recipient email.');
 
-        succBox.textContent = I18N[currentLang].update_email_success_msg || 'Empfänger-E-Mail wurde erfolgreich aktualisiert.';
+        succBox.textContent = I18N[currentLang].update_email_success_msg || 'Empfänger-E-Mails wurden erfolgreich aktualisiert.';
         succBox.style.display = 'block';
 
         setTimeout(() => {
@@ -2605,6 +2604,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       const text = document.getElementById('plaintext').value.trim();
       const recipient_email = document.getElementById('recipient-email').value.trim();
+      const recipient_email_2_el = document.getElementById('recipient-email-2');
+      const recipient_email_2 = recipient_email_2_el ? recipient_email_2_el.value.trim() : '';
       const errBox = document.getElementById('enc-error');
       const resBox = document.getElementById('enc-results');
       errBox.style.display = 'none';
@@ -2623,8 +2624,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         return;
       }
 
+      if (recipient_email_2 && (!recipient_email_2.includes('@') || !recipient_email_2.includes('.'))) {
+        errBox.textContent = currentLang === 'de' ? 'Die 2. Empfänger-E-Mail ist ungültig.' : 'The secondary recipient email is invalid.';
+        errBox.style.display = 'block';
+        if (recipient_email_2_el) recipient_email_2_el.focus();
+        return;
+      }
+
       try {
         const payload = { text, recipient_email };
+        if (recipient_email_2) payload.recipient_email_2 = recipient_email_2;
         if (selectedFileObject) payload.file = selectedFileObject;
 
         const token = localStorage.getItem('sv_auth_token');
@@ -2642,10 +2651,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('res-code').textContent = data.code;
         document.getElementById('res-key-a').textContent = data.key_a;
 
+        const allEmails = [recipient_email];
+        if (recipient_email_2) allEmails.push(recipient_email_2);
+
         const emailInfo = document.getElementById('res-email-info');
         const msg = currentLang === 'de'
-          ? `✉️ Empfänger registriert: <strong>${recipient_email}</strong> (Schlüssel B wird bei 30 Tagen Inaktivität gesendet; Datenlöschung 30 Tage danach).`
-          : `✉️ Recipient registered: <strong>${recipient_email}</strong> (Key B dispatched after 30 days inactivity; data purged 30 days thereafter).`;
+          ? `✉️ Empfänger registriert: <strong>${allEmails.join(', ')}</strong> (Schlüssel B wird bei 30 Tagen Inaktivität gesendet; Datenlöschung 30 Tage danach).`
+          : `✉️ Recipients registered: <strong>${allEmails.join(', ')}</strong> (Key B dispatched after 30 days inactivity; data purged 30 days thereafter).`;
         emailInfo.innerHTML = msg;
         emailInfo.style.display = 'block';
 
@@ -2887,18 +2899,18 @@ def process_inactive_vault_records(
     expired_codes = storage.get_inactive_expired_records(inactivity_days, storage_dir)
     for code in expired_codes:
         try:
-            key_b, encrypted_text, recipient_email = storage.switch_to_inherited_mode(code, storage_dir)
+            key_b, encrypted_text, recipients = storage.switch_to_inherited_mode(code, storage_dir)
             sys.stderr.write(
                 f"[Auto-Inheritance] Record '{code}' exceeded {inactivity_days} days of inactivity. Switched to Inherited Mode.\n"
             )
-            if recipient_email:
+            for r_email in recipients:
                 email_service.send_key_b_email(
-                    to_email=recipient_email,
+                    to_email=r_email,
                     code=code,
                     key_b=key_b,
                     server_url=base_url,
                 )
-                sys.stderr.write(f"[Auto-Inheritance] Dispatched Key B to recipient <{recipient_email}> for record '{code}'.\n")
+                sys.stderr.write(f"[Auto-Inheritance] Dispatched Key B to recipient <{r_email}> for record '{code}'.\n")
         except Exception as e:
             sys.stderr.write(f"[Auto-Inheritance Error] Failed processing inactive code '{code}': {e}\n")
 
@@ -3219,7 +3231,8 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
 
             plaintext = data.get("text", "")
             file_obj = data.get("file")
-            recipient_email = (data.get("recipient_email") or "").strip()
+            recipient_email = (data.get("recipient_email") or data.get("email") or "").strip()
+            recipient_email_2 = (data.get("recipient_email_2") or data.get("email_2") or "").strip() or None
             device_id = data.get("device_id") or self.headers.get("X-Device-ID")
             raw_inactivity = data.get("inactivity_days")
             inactivity_days = int(raw_inactivity) if raw_inactivity is not None else int(self.server.inactivity_days)
@@ -3232,7 +3245,14 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             if not recipient_email or "@" not in recipient_email or "." not in recipient_email.split("@")[-1]:
                 self.send_error_response(
                     HTTPStatus.BAD_REQUEST,
-                    "Recipient email is strictly required. An email address is mandatory for the 30-day inactivity emergency handover."
+                    "Primary recipient email is strictly required. An email address is mandatory for the 30-day inactivity emergency handover."
+                )
+                return
+
+            if recipient_email_2 and ("@" not in recipient_email_2 or "." not in recipient_email_2.split("@")[-1]):
+                self.send_error_response(
+                    HTTPStatus.BAD_REQUEST,
+                    "The secondary recipient email format is invalid."
                 )
                 return
 
@@ -3261,6 +3281,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     encrypted_text=encrypted_text,
                     server_key_b=key_b,
                     recipient_email=recipient_email,
+                    recipient_email_2=recipient_email_2,
                     owner_username=current_user,
                     device_id=device_id,
                     mode="normal",
@@ -3268,6 +3289,10 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                     auto_inherit=auto_inherit,
                     storage_dir=storage_dir,
                 )
+
+                all_recipients = [recipient_email]
+                if recipient_email_2:
+                    all_recipients.append(recipient_email_2)
 
                 self.send_json_response(
                     HTTPStatus.OK,
@@ -3277,7 +3302,9 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                         "key_bits": key_bits,
                         "has_file": bool(file_obj),
                         "owner_username": current_user,
-                        "recipient_email": recipient_email.strip() if recipient_email else None,
+                        "recipient_email": recipient_email,
+                        "recipient_email_2": recipient_email_2,
+                        "recipients": all_recipients,
                         "inactivity_days": inactivity_days,
                         "auto_inherit": auto_inherit,
                         "mode": "normal",
@@ -3379,34 +3406,41 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 return
 
             try:
-                key_b, encrypted_text, recipient_email = storage.switch_to_inherited_mode(clean_code, storage_dir)
+                key_b, encrypted_text, recipients = storage.switch_to_inherited_mode(clean_code, storage_dir)
 
                 email_sent = False
                 email_status = "No recipient email was configured for this record."
-                if recipient_email:
+                if recipients:
                     host_header = self.headers.get("Host", f"localhost:{self.server.server_address[1]}")
                     proto = "https" if isinstance(self.request, ssl.SSLSocket) else "http"
                     server_url = f"{proto}://{host_header}"
-                    email_sent, email_status = email_service.send_key_b_email(
-                        to_email=recipient_email,
-                        code=clean_code,
-                        key_b=key_b,
-                        server_url=server_url,
-                    )
+                    sent_count = 0
+                    for r_email in recipients:
+                        ok, st = email_service.send_key_b_email(
+                            to_email=r_email,
+                            code=clean_code,
+                            key_b=key_b,
+                            server_url=server_url,
+                        )
+                        if ok:
+                            sent_count += 1
+                    email_sent = sent_count > 0
+                    email_status = f"Key B dispatched to {len(recipients)} recipient(s): {', '.join(recipients)}"
 
                 resp_payload = {
                     "code": clean_code,
-                    "recipient_email": recipient_email,
+                    "recipient_email": recipients[0] if recipients else None,
+                    "recipients": recipients,
                     "email_sent": email_sent,
                     "email_status": email_status,
                     "mode": "inherited",
                     "status": "success",
                 }
-                if not recipient_email:
+                if not recipients:
                     resp_payload["key_b"] = key_b
                     resp_payload["message"] = f"Key B released to user and deleted from backend for record '{clean_code}'."
                 else:
-                    resp_payload["message"] = f"Key B dispatched to {recipient_email} and deleted from backend for record '{clean_code}'. Key B is omitted from response for privacy."
+                    resp_payload["message"] = f"Key B dispatched to {', '.join(recipients)} and deleted from backend for record '{clean_code}'. Key B is omitted from response for privacy."
 
                 self.send_json_response(HTTPStatus.OK, resp_payload)
             except Exception as e:
@@ -3564,15 +3598,16 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 self.send_error_response(HTTPStatus.INTERNAL_SERVER_ERROR, f"Could not delete file for code '{clean_code}'.")
             return
 
-        # Route: Update recipient email address for an existing vault
+        # Route: Update recipient email addresses for an existing vault
         if path in ("/api/update-recipient", "/api/update-email"):
             code = data.get("code")
-            new_email = (data.get("email") or data.get("recipient_email") or "").strip()
+            email_1 = (data.get("email") or data.get("recipient_email") or data.get("email_1") or "").strip()
+            email_2 = (data.get("email_2") or data.get("recipient_email_2") or "").strip() or None
             key_a = data.get("key_a") or data.get("key")
             current_user = get_authenticated_user(self)
 
-            if not code or not new_email:
-                self.send_error_response(HTTPStatus.BAD_REQUEST, "Both 'code' and 'email' parameters are required.")
+            if not code or not email_1:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Both 'code' and primary 'email' parameters are required.")
                 return
 
             clean_code = str(code).strip()
@@ -3612,12 +3647,15 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 return
 
             try:
-                updated_rec = storage.update_recipient_email(clean_code, new_email, storage_dir)
+                updated_rec = storage.update_recipient_emails(clean_code, email_1, email_2, storage_dir)
+                all_recipients = storage.get_record_recipients(updated_rec)
                 self.send_json_response(HTTPStatus.OK, {
                     "status": "success",
                     "code": clean_code,
-                    "recipient_email": updated_rec["recipient_email"],
-                    "message": f"Recipient email for vault '{clean_code}' was successfully updated to '{updated_rec['recipient_email']}'."
+                    "recipient_email": updated_rec.get("recipient_email"),
+                    "recipient_email_2": updated_rec.get("recipient_email_2"),
+                    "recipients": all_recipients,
+                    "message": f"Recipient emails for vault '{clean_code}' were successfully updated to '{', '.join(all_recipients)}'."
                 })
             except Exception as e:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))
