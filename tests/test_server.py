@@ -531,6 +531,64 @@ class TestServerIntegration(unittest.TestCase):
             urlopen(unauth_dec_req)
         self.assertEqual(ctx.exception.code, 400)
 
+    def test_delete_vault_api(self):
+        """Test deleting a vault permanently from the server via /api/delete-vault."""
+        # 1. Register and login test user
+        del_user = "user_delete_test"
+        reg_payload = json.dumps({"username": del_user, "password": "password123"}).encode("utf-8")
+        reg_req = Request(f"{self.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            del_token = data["token"]
+
+        # 2. Encrypt a vault record
+        enc_payload = json.dumps({
+            "text": "Payload to be deleted permanently",
+            "recipient_email": "del.test@example.com"
+        }).encode("utf-8")
+        enc_req = Request(
+            f"{self.base_url}/api/encrypt",
+            data=enc_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {del_token}"},
+            method="POST"
+        )
+        with urlopen(enc_req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            code = data["code"]
+            key_a = data["key_a"]
+
+        # Verify file exists on disk
+        file_path = os.path.join(self.test_storage_dir, f"{code}.json")
+        self.assertTrue(os.path.isfile(file_path))
+
+        # 3. Unauthorized deletion attempt (without token and without key_a) -> 401 Unauthorized
+        unauth_del_payload = json.dumps({"code": code}).encode("utf-8")
+        unauth_del_req = Request(
+            f"{self.base_url}/api/delete-vault",
+            data=unauth_del_payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(unauth_del_req)
+        self.assertEqual(ctx.exception.code, 401)
+        self.assertTrue(os.path.isfile(file_path))
+
+        # 4. Authorized deletion as owner -> 200 OK
+        auth_del_req = Request(
+            f"{self.base_url}/api/delete-vault",
+            data=unauth_del_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {del_token}"},
+            method="POST"
+        )
+        with urlopen(auth_del_req) as resp:
+            self.assertEqual(resp.status, 200)
+            res_data = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(res_data["status"], "success")
+
+        # Verify file is permanently deleted from disk
+        self.assertFalse(os.path.isfile(file_path))
+
 
 if __name__ == "__main__":
     unittest.main()

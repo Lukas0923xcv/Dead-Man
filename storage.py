@@ -230,6 +230,21 @@ def load_vault_record(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> Opti
         return json.load(f)
 
 
+def delete_vault_record(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> bool:
+    """
+    Permanently delete an encrypted vault record from the filesystem.
+    Returns True if file existed and was removed, False otherwise.
+    """
+    try:
+        file_path = get_file_path(code, storage_dir)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+            return True
+        return False
+    except Exception:
+        return False
+
+
 def touch_record_activity(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> bool:
     """
     Update the last_active_at timestamp for a specific record.

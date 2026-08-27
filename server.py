@@ -1368,6 +1368,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <!-- =====================================================================
+         DELETE CONFIRMATION MODAL (2-STEP SAFEGUARD)
+         ===================================================================== -->
+    <div id="delete-modal" class="modal-overlay" onclick="closeDeleteModalOnBackdrop(event)">
+      <div class="modal-container" style="max-width: 440px;">
+        <div class="modal-header">
+          <div class="modal-title" style="color: #f85149;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(248, 81, 73, 0.12); color: #f85149; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              🗑️
+            </div>
+            <span data-i18n="delete_modal_title">Tresor & Datei endgültig löschen?</span>
+          </div>
+          <button class="modal-close-btn" onclick="closeDeleteModal()" title="Schliessen">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p style="font-size: 13.5px; line-height: 1.5; color: var(--text-bright); margin-bottom: 14px;">
+            <span data-i18n="delete_modal_text_prefix">Möchten Sie den Datensatz mit Code</span> <strong id="delete-modal-code-display" style="font-family: 'JetBrains Mono', monospace; background: var(--card-subtle); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);"></strong> <span data-i18n="delete_modal_text_suffix">und alle darin verschlüsselten Dateien wirklich unwiderruflich vom Server löschen?</span>
+          </p>
+
+          <div class="alert alert-warning" style="margin-bottom: 18px;">
+            ⚠️ <span data-i18n="delete_modal_warning">Diese Aktion kann nicht rückgängig gemacht werden. Der Datensatz und alle Dateien werden sofort und vollständig aus dem Serverspeicher entfernt.</span>
+          </div>
+
+          <div id="delete-modal-error" class="alert alert-error" style="display: none; margin-bottom: 14px;"></div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn-copy" style="padding: 9px 16px; font-size: 13px;" onclick="closeDeleteModal()" data-i18n="delete_modal_cancel">Abbrechen</button>
+            <button type="button" class="btn-main" id="delete-modal-confirm-btn" style="width: auto; background: #dc2626; padding: 9px 18px;" onclick="executeDeleteVault()" data-i18n="delete_modal_confirm">🗑️ Unwiderruflich löschen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
          VAULT SUBPAGE VIEW (ENCRYPT, DECRYPT, INHERIT, MY VAULTS)
          ===================================================================== -->
     <div id="view-app">
@@ -1528,6 +1562,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <button class="btn-copy" onclick="copyText('res-decrypted', this)" data-i18n="btn_copy">Kopieren</button>
             </div>
             <div id="res-decrypted" class="item-code" style="white-space: pre-wrap; font-size: 13.5px;"></div>
+          </div>
+
+          <!-- Decrypted Vault / File Management Actions -->
+          <div id="dec-actions-section" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <span style="font-size: 11.5px; color: var(--text-muted);" data-i18n="dec_manage_hint">Verwaltung:</span>
+            <button type="button" class="btn-vault-action danger" id="dec-delete-btn" onclick="openDeleteModalForDecrypted()" style="padding: 7px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+              🗑️ <span data-i18n="btn_delete_vault_file">Datei & Tresor vom Server löschen</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1736,6 +1778,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         inh_stopped_success: "<strong>Nachlassverbindung getrennt:</strong> Die automatische Weitergabe wurde deaktiviert. ⚠️ <strong>30-Tage-Löschfrist:</strong> Nach Trennung der Verbindung verbleiben 30 Tage zum Abruf, bevor die Daten vollständig vom Server gelöscht werden.",
         label_released_key_b: "Freigegebener Schlüssel B",
         
+        btn_delete_vault_file: "Datei & Tresor vom Server löschen",
+        dec_manage_hint: "Verwaltung:",
+        delete_modal_title: "Tresor & Datei endgültig löschen?",
+        delete_modal_text_prefix: "Möchten Sie den Datensatz mit Code",
+        delete_modal_text_suffix: "und alle darin verschlüsselten Dateien wirklich unwiderruflich vom Server löschen?",
+        delete_modal_warning: "Diese Aktion kann nicht rückgängig gemacht werden. Der Datensatz und alle Dateien werden sofort und vollständig aus dem Serverspeicher entfernt.",
+        delete_modal_cancel: "Abbrechen",
+        delete_modal_confirm: "🗑️ Unwiderruflich löschen",
+        delete_success_msg: "Tresor & Datei wurden erfolgreich und unwiderruflich vom Server gelöscht.",
+        
         btn_copy: "Kopieren",
         btn_copied: "Kopiert",
         footer_text: "SecureVault • Zero-Knowledge Dead Man's Switch • Schweiz",
@@ -1867,6 +1919,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         inh_success: "<strong>Custody Handover Executed:</strong> Key B has been dispatched and removed from server memory. ⚠️ <strong>30-Day Retrieval Window:</strong> The recipient has 30 days to retrieve the data before the record is permanently deleted.",
         inh_stopped_success: "<strong>Dead Man Switch Disconnected:</strong> Automated handover has been disabled. ⚠️ <strong>30-Day Purge Window:</strong> Following disconnection, you have 30 days to retrieve your data before it is permanently deleted from the server.",
         label_released_key_b: "Released Key B",
+        
+        btn_delete_vault_file: "Delete File & Vault from Server",
+        dec_manage_hint: "Management:",
+        delete_modal_title: "Permanently Delete Vault & File?",
+        delete_modal_text_prefix: "Are you sure you want to permanently delete vault with code",
+        delete_modal_text_suffix: "and all contained encrypted files from the server?",
+        delete_modal_warning: "This action cannot be undone. The record and files will be immediately erased from server storage.",
+        delete_modal_cancel: "Cancel",
+        delete_modal_confirm: "🗑️ Delete Permanently",
+        delete_success_msg: "Vault and file were permanently deleted from the server.",
         
         btn_copy: "Copy",
         btn_copied: "Copied",
@@ -2104,6 +2166,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <button class="btn-vault-action" onclick="openInheritForCode('${v.code}')">🚀 ${currentLang === 'de' ? 'Nachlass auslösen' : 'Trigger Handover'}</button>
                 <button class="btn-vault-action danger" onclick="openStopInheritForCode('${v.code}')">🛑 ${currentLang === 'de' ? 'Verbindung trennen' : 'Disconnect'}</button>
               ` : ''}
+              <button class="btn-vault-action danger" onclick="openDeleteModal('${v.code}')">🗑️ ${currentLang === 'de' ? 'Löschen' : 'Delete'}</button>
             </div>
           `;
           list.appendChild(item);
@@ -2114,6 +2177,100 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         loading.style.display = 'none';
         list.innerHTML = `<div class="alert alert-error" style="display:block;">${err.message}</div>`;
         list.style.display = 'block';
+      }
+    }
+
+    let pendingDeleteCode = null;
+    let pendingDeleteKeyA = null;
+    let currentDecryptedCode = null;
+    let currentDecryptedKeyA = null;
+
+    function openDeleteModal(code, keyA) {
+      pendingDeleteCode = code;
+      pendingDeleteKeyA = keyA || null;
+      const codeDisplay = document.getElementById('delete-modal-code-display');
+      if (codeDisplay) codeDisplay.textContent = code;
+      const errBox = document.getElementById('delete-modal-error');
+      if (errBox) errBox.style.display = 'none';
+      document.getElementById('delete-modal').style.display = 'flex';
+    }
+
+    function openDeleteModalForDecrypted() {
+      const code = document.getElementById('dec-code').value.trim() || currentDecryptedCode;
+      const keyA = document.getElementById('dec-key-a').value.trim() || currentDecryptedKeyA;
+      if (!code) return;
+      openDeleteModal(code, keyA);
+    }
+
+    function closeDeleteModal() {
+      pendingDeleteCode = null;
+      pendingDeleteKeyA = null;
+      document.getElementById('delete-modal').style.display = 'none';
+    }
+
+    function closeDeleteModalOnBackdrop(e) {
+      if (e.target.id === 'delete-modal') {
+        closeDeleteModal();
+      }
+    }
+
+    async function executeDeleteVault() {
+      if (!pendingDeleteCode) return;
+      const errBox = document.getElementById('delete-modal-error');
+      const confirmBtn = document.getElementById('delete-modal-confirm-btn');
+      if (errBox) errBox.style.display = 'none';
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = currentLang === 'de' ? 'Lösche...' : 'Deleting...';
+      }
+
+      try {
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const payload = { code: pendingDeleteCode };
+        if (pendingDeleteKeyA) payload.key_a = pendingDeleteKeyA;
+
+        const res = await fetch('/api/delete-vault', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Deletion failed.');
+
+        const deletedCode = pendingDeleteCode;
+        closeDeleteModal();
+
+        // If currently decrypted with this code, clear and notify
+        if (currentDecryptedCode === deletedCode || document.getElementById('dec-code').value.trim() === deletedCode) {
+          document.getElementById('dec-results').style.display = 'none';
+          document.getElementById('dec-code').value = '';
+          document.getElementById('dec-key-a').value = '';
+          document.getElementById('dec-key-b').value = '';
+          currentDecryptedCode = null;
+          currentDecryptedKeyA = null;
+          const decErr = document.getElementById('dec-error');
+          decErr.className = 'alert alert-success';
+          decErr.innerHTML = `🗑️ ${I18N[currentLang].delete_success_msg || 'Tresor & Datei wurden erfolgreich und unwiderruflich vom Server gelöscht.'}`;
+          decErr.style.display = 'block';
+        }
+
+        // If user logged in, reload vault list
+        if (currentUser) {
+          loadUserVaults();
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = err.message;
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = I18N[currentLang].delete_modal_confirm || '🗑️ Unwiderruflich löschen';
+        }
       }
     }
 
@@ -2140,6 +2297,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (e.key === 'Escape') {
         closeInfoModal();
         closeAuthModal();
+        closeDeleteModal();
       }
     });
 
@@ -2419,6 +2577,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           decryptedFileObject = null;
           fileSection.style.display = 'none';
         }
+
+        currentDecryptedCode = code;
+        currentDecryptedKeyA = key_a;
+        const actionsSection = document.getElementById('dec-actions-section');
+        if (actionsSection) actionsSection.style.display = 'flex';
 
         resBox.style.display = 'block';
       } catch (err) {
@@ -3214,6 +3377,63 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 )
             except Exception as e:
                 self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))
+            return
+
+        # Route: Delete a vault and attached file permanently from server
+        if path in ("/api/delete-vault", "/api/delete"):
+            code = data.get("code")
+            key_a = data.get("key_a") or data.get("key")
+            current_user = get_authenticated_user(self)
+
+            if not code:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Missing 'code' parameter in request.")
+                return
+
+            clean_code = str(code).strip()
+            storage_dir = self.server.storage_dir
+            record = storage.load_vault_record(clean_code, storage_dir)
+
+            if record is None:
+                self.send_error_response(HTTPStatus.NOT_FOUND, f"No vault record found for code '{clean_code}'.")
+                return
+
+            owner = record.get("owner_username")
+            authorized = False
+
+            # 1. Check if logged-in user is the owner
+            if owner and current_user and current_user.lower() == owner.lower():
+                authorized = True
+            # 2. Check if valid Key A provided
+            elif key_a:
+                server_key_b = record.get("server_key_b")
+                if server_key_b:
+                    try:
+                        decrypt_split(record["encrypted_text"], str(key_a).strip(), server_key_b.strip())
+                        authorized = True
+                    except Exception:
+                        pass
+                else:
+                    authorized = True
+            # 3. If record has no owner and not authenticated
+            elif not owner:
+                authorized = True
+
+            if not authorized:
+                self.send_error_response(
+                    HTTPStatus.UNAUTHORIZED,
+                    "Unauthorized. You must either be logged in as the owner of this vault or provide a valid Key A."
+                )
+                return
+
+            deleted = storage.delete_vault_record(clean_code, storage_dir)
+            if deleted:
+                self.send_json_response(HTTPStatus.OK, {
+                    "status": "success",
+                    "code": clean_code,
+                    "message": f"Vault record '{clean_code}' and all attached files were permanently deleted from the server."
+                })
+            else:
+                self.send_error_response(HTTPStatus.INTERNAL_SERVER_ERROR, f"Could not delete file for code '{clean_code}'.")
             return
 
         self.send_error_response(HTTPStatus.NOT_FOUND, f"Endpoint '{self.path}' not found.")
