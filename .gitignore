@@ -11,6 +11,8 @@ Thumbs.db
 *.zip
 *.tar.gz
 .env
+.env.*
+!.env.example
 data/
 *.pem
 git.cmd

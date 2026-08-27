@@ -76,6 +76,53 @@ To enable HTTPS transport security:
 
 ---
 
+## 📧 Email Configuration & Gmail App Password Setup (Key B Automated Dispatch)
+
+SecureVault automatically dispatches **Key B** and a **1-click direct decryption link** to the designated recipient email(s) whenever the **30-day dead man's switch triggers** or when manual emergency handover is executed.
+
+To enable live email delivery via Gmail:
+
+### 1. Generate a Gmail App Password
+1. Sign in to your Google Account and navigate to **[Google Security](https://myaccount.google.com/security)**.
+2. Verify that **2-Step Verification** (2FA) is turned **ON**.
+3. Open **[Google App Passwords](https://myaccount.google.com/apppasswords)** (or search *"App passwords"* in your Google Account search bar).
+4. Enter an app name (e.g. `SecureVault` or `DeadMan`) and click **Create**.
+5. Google will display a **16-character App Password** (formatted like `abcd efgh ijkl mnop`).
+6. Copy this 16-character code (remove any spaces).
+
+### 2. Configure Your `.env` File
+Create or update the `.env` file in the project root directory:
+
+```env
+# Primary Server Configuration
+PORT=8080
+MONITOR_PORT=8081
+KEY_BITS=256
+STORAGE_DIR=/app/data/vault
+USER_STORAGE_LIMIT_BYTES=10737418240
+
+# Gmail / SMTP Settings for automated Key B dispatch
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_actual_email@gmail.com
+SMTP_PASS=abcdefghijklmnop
+SMTP_FROM=your_actual_email@gmail.com
+```
+
+> [!NOTE]
+> **Privacy & Credential Safety**: The `.env` file is strictly ignored by `.gitignore` and is **never committed to Git or pushed to GitHub**. Always keep your `.env` file local on your server.
+
+### 3. Restart Container to Apply
+```bash
+sudo docker compose down && sudo docker compose up -d --build
+```
+Once configured:
+- SecureVault logs will confirm: `Email Delivery: Configured (Gmail/SMTP)`.
+- Key B notifications will automatically be emailed to the primary and secondary recipients upon 30 days of inactivity.
+- If `SMTP_USER` and `SMTP_PASS` are left empty, SecureVault operates in **Simulation Mode** (printing Key B to container logs for development/testing).
+
+---
+
 ## 🏛️ Dead Man's Switch & Data Sovereignty Policy
 
 SecureVault is engineered specifically for **automated cryptographic handover and emergency succession**:
