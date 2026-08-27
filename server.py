@@ -1185,6 +1185,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <button class="btn-hero-primary" onclick="navigateTo('app')" data-i18n="btn_open_vault">
             Tresor öffnen →
           </button>
+          <button class="btn-hero-secondary" style="background: var(--card-subtle); border: 1px solid var(--border); color: var(--text); padding: 11px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" onclick="navigateTo('app', 'decrypt')" data-i18n="btn_hero_decrypt_heir">
+            🔓 Nachlass entschlüsseln (Ohne Login)
+          </button>
           <button class="btn-hero-info" onclick="openInfoModal()">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/>
@@ -1465,8 +1468,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div id="auth-guard-encrypt" class="guard-card" style="display: none;">
           <div class="guard-icon">🔐</div>
           <div class="guard-title" data-i18n="auth_guard_title">Anmeldung erforderlich</div>
-          <div class="guard-desc" data-i18n="auth_guard_desc">Um vertrauliche Daten und Dateien zu verschlüsseln oder Ihre gespeicherten Tresore einzusehen, müssen Sie angemeldet sein.</div>
+          <div class="guard-desc" data-i18n="auth_guard_desc">Um vertrauliche Daten und Dateien neu zu verschlüsseln oder Ihre gespeicherten Tresore einzusehen, müssen Sie angemeldet sein.</div>
           <button class="btn-main" style="max-width: 260px; margin: 0 auto;" onclick="openAuthModal('login')" data-i18n="auth_guard_btn">Jetzt anmelden / registrieren</button>
+          
+          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted);">
+            <span data-i18n="auth_guard_heir_hint">Möchten Sie einen bestehenden Nachlass als Erbe entschlüsseln?</span><br>
+            <button type="button" class="btn-copy" style="margin-top: 8px; padding: 7px 14px; font-size: 12.5px; color: var(--accent); border-color: rgba(99, 102, 241, 0.3);" onclick="switchTab('decrypt')" data-i18n="auth_guard_heir_btn">🔓 Direkt ohne Login entschlüsseln →</button>
+          </div>
         </div>
 
         <!-- Encrypt Form Container (visible when logged in) -->
@@ -1560,7 +1568,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <div id="tab-decrypt" class="card" style="display: none;">
         <div class="card-header">
           <div class="card-title" data-i18n="dec_title">Daten & Dateien entschlüsseln</div>
-          <div class="card-subtitle" data-i18n="dec_subtitle">Geben Sie Ihren Speichercode und Schlüssel A ein, um Ihre Daten abzurufen.</div>
+          <div class="card-subtitle" data-i18n="dec_subtitle">Geben Sie Ihren Speichercode und Schlüssel ein, um Ihre Daten abzurufen.</div>
+        </div>
+
+        <div id="dec-heir-banner" style="margin-bottom: 18px; font-size: 13px; line-height: 1.5; color: var(--text); background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;">
+          <span style="font-size: 18px; line-height: 1;">🔓</span>
+          <div>
+            <strong style="color: var(--accent);" data-i18n="dec_heir_banner_title">Öffentliche Entschlüsselung (Kein Login erforderlich):</strong><br>
+            <span data-i18n="dec_heir_banner_desc">Erben und Empfänger können vertrauliche Daten & Dateien hier direkt ohne Registrierung oder Login entschlüsseln. Geben Sie dazu einfach den <strong>Speichercode</strong>, <strong>Schlüssel A</strong> (vom Erblasser) und <strong>Schlüssel B</strong> (per E-Mail erhalten) ein.</span>
+          </div>
         </div>
 
         <div class="form-group">
@@ -1569,13 +1585,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <div class="form-group">
-          <label for="dec-key-a" data-i18n="dec_label_key_a">Schlüssel A</label>
+          <label for="dec-key-a"><span data-i18n="dec_label_key_a">Schlüssel A</span> <span class="hint" data-i18n="dec_hint_key_a">(Vom Eigentümer/Erblasser erhalten)</span></label>
           <input type="text" id="dec-key-a" data-i18n-placeholder="dec_ph_key_a" placeholder="Schlüssel A einfügen...">
         </div>
 
         <div class="form-group">
-          <label for="dec-key-b"><span data-i18n="dec_label_key_b">Schlüssel B</span> <span class="hint" data-i18n="dec_hint_key_b">(Nur nötig, wenn nicht als Eigentümer eingeloggt oder nach Nachlass)</span></label>
-          <input type="text" id="dec-key-b" data-i18n-placeholder="dec_ph_key_b" placeholder="Auf eigenem Konto leer lassen...">
+          <label for="dec-key-b"><span data-i18n="dec_label_key_b">Schlüssel B</span> <span class="hint" data-i18n="dec_hint_key_b">(Für Erben erforderlich / auf eigenem Konto automatisch)</span></label>
+          <input type="text" id="dec-key-b" data-i18n-placeholder="dec_ph_key_b" placeholder="Schlüssel B aus E-Mail einfügen (auf eigenem Konto leer lassen)...">
         </div>
 
         <button class="btn-main" onclick="handleDecrypt()" data-i18n="btn_decrypt">Entschlüsseln</button>
@@ -1781,8 +1797,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         auth_toggle_to_register: "Noch kein Konto? Jetzt registrieren →",
         auth_toggle_to_login: "Bereits registriert? Jetzt anmelden →",
         auth_guard_title: "Anmeldung erforderlich",
-        auth_guard_desc: "Um vertrauliche Daten und Dateien zu verschlüsseln oder Ihre gespeicherten Tresore einzusehen, müssen Sie angemeldet sein.",
+        auth_guard_title: "Anmeldung erforderlich",
+        auth_guard_desc: "Um vertrauliche Daten und Dateien neu zu verschlüsseln oder Ihre gespeicherten Tresore einzusehen, müssen Sie angemeldet sein.",
         auth_guard_btn: "Jetzt anmelden / registrieren",
+        auth_guard_heir_hint: "Möchten Sie einen bestehenden Nachlass als Erbe entschlüsseln?",
+        auth_guard_heir_btn: "🔓 Direkt ohne Login entschlüsseln →",
+        btn_hero_decrypt_heir: "🔓 Nachlass entschlüsseln (Ohne Login)",
         
         vaults_title: "Meine Tresore & Verwahrungen",
         vaults_subtitle: "Übersicht aller von Ihrem Konto verschlüsselten Dateien, Texte und Nachlässe.",
@@ -1808,14 +1828,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         label_key_a: "Ihr privater Schlüssel A",
         
         dec_title: "Daten & Dokumente entschlüsseln",
-        dec_subtitle: "Geben Sie Ihren Speichercode und Schlüssel A ein, um Ihre Daten abzurufen.",
+        dec_subtitle: "Geben Sie Ihren Speichercode und Schlüssel ein, um Ihre Daten abzurufen.",
+        dec_heir_banner_title: "Öffentliche Entschlüsselung (Kein Login erforderlich):",
+        dec_heir_banner_desc: "Erben und Empfänger können vertrauliche Daten & Dateien hier direkt ohne Registrierung oder Login entschlüsseln. Geben Sie dazu einfach den Speichercode, Schlüssel A (vom Erblasser) und Schlüssel B (per E-Mail erhalten) ein.",
         dec_label_code: "Speichercode",
         dec_ph_code: "16-stelliger Code",
         dec_label_key_a: "Schlüssel A",
+        dec_hint_key_a: "(Vom Eigentümer/Erblasser erhalten)",
         dec_ph_key_a: "Schlüssel A einfügen...",
         dec_label_key_b: "Schlüssel B",
-        dec_hint_key_b: "(Nur nötig, wenn nicht als Eigentümer eingeloggt oder nach Nachlass)",
-        dec_ph_key_b: "Auf eigenem Konto leer lassen...",
+        dec_hint_key_b: "(Für Erben erforderlich / auf eigenem Konto automatisch)",
+        dec_ph_key_b: "Schlüssel B aus E-Mail einfügen (auf eigenem Konto leer lassen)...",
         btn_decrypt: "Entschlüsseln",
         btn_download_file: "Datei herunterladen",
         label_dec_text: "Entschlüsselter Text",
@@ -1873,6 +1896,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         hero_title: "Zero-Knowledge Digital Vault & Cryptographic Custody",
         hero_desc: "Securely store confidential files, credentials, documents, and digital inheritances. End-to-end encrypted with 256-bit split keys in Switzerland under strict data privacy regulations.",
         btn_open_vault: "Open Vault →",
+        btn_hero_decrypt_heir: "🔓 Decrypt Handover (No Login)",
         btn_more_info: "How it works (Info)",
         
         preview_title: "Dual-Key Splitting Architecture",
@@ -1890,6 +1914,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         auth_guard_title: "Authentication Required",
         auth_guard_desc: "To encrypt confidential data, files, or view your saved vaults, please sign in or create an account.",
+        auth_guard_heir_hint: "Looking to decrypt an inheritance as a designated heir?",
+        auth_guard_heir_btn: "🔓 Decrypt directly without login →",
         btn_login_guard: "Sign In",
         btn_register_guard: "Create Account",
         
@@ -1914,14 +1940,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         label_key_a: "Your Private Key A",
         
         dec_title: "Decrypt Data & Documents",
-        dec_subtitle: "Enter your storage code and Key A to retrieve your data.",
+        dec_subtitle: "Enter your storage code and keys to retrieve your data.",
+        dec_heir_banner_title: "Public Decryption (No Login Required):",
+        dec_heir_banner_desc: "Heirs and recipients can directly decrypt confidential data and files here without creating an account or signing in. Simply enter the Storage Code, Key A (from the owner), and Key B (received via email).",
         dec_label_code: "Storage Code",
         dec_ph_code: "16-character code",
         dec_label_key_a: "Key A",
+        dec_hint_key_a: "(Received from vault owner/heir)",
         dec_ph_key_a: "Paste Key A...",
         dec_label_key_b: "Key B",
-        dec_hint_key_b: "(Only required if not logged in as owner or after handover)",
-        dec_ph_key_b: "Leave blank on own account...",
+        dec_hint_key_b: "(Required for heirs / automatic on own account)",
+        dec_ph_key_b: "Paste Key B from email (leave blank on own account)...",
         btn_decrypt: "Decrypt",
         btn_download_file: "Download File",
         label_dec_text: "Decrypted Text",
@@ -2497,9 +2526,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       initLanguage();
       checkAuthStatus().then(() => {
         sendHeartbeat();
-        const hash = window.location.hash;
-        const path = window.location.pathname;
-        if (hash === '#app' || hash === '#vault' || path === '/app' || path === '/vault') {
+        const hash = window.location.hash || '';
+        const path = window.location.pathname || '';
+        const urlParams = new URLSearchParams(window.location.search || '');
+
+        let targetTab = null;
+        if (hash.includes('decrypt') || path === '/decrypt' || urlParams.get('tab') === 'decrypt') {
+          targetTab = 'decrypt';
+        } else if (hash.includes('inherit') || path === '/inherit' || urlParams.get('tab') === 'inherit') {
+          targetTab = 'inherit';
+        } else if (hash.includes('encrypt') || path === '/encrypt' || urlParams.get('tab') === 'encrypt') {
+          targetTab = 'encrypt';
+        } else if (hash.includes('vaults') || path === '/vaults' || urlParams.get('tab') === 'vaults') {
+          targetTab = 'vaults';
+        }
+
+        // Check for code & key_b in query params or hash
+        let qCode = urlParams.get('code');
+        let qKeyB = urlParams.get('key_b');
+        if (!qCode && hash.includes('code=')) {
+          try {
+            const hParams = new URLSearchParams(hash.split('?')[1] || hash.substring(1));
+            qCode = hParams.get('code');
+            if (!qKeyB) qKeyB = hParams.get('key_b');
+          } catch(e) {}
+        }
+
+        if (qCode) {
+          const decCodeEl = document.getElementById('dec-code');
+          if (decCodeEl) decCodeEl.value = qCode;
+          const inhCodeEl = document.getElementById('inh-code');
+          if (inhCodeEl) inhCodeEl.value = qCode;
+        }
+        if (qKeyB) {
+          const decKeyBEl = document.getElementById('dec-key-b');
+          if (decKeyBEl) decKeyBEl.value = qKeyB;
+        }
+
+        if (targetTab) {
+          navigateTo('app', targetTab);
+        } else if (hash === '#app' || hash === '#vault' || path === '/app' || path === '/vault') {
           navigateTo('app');
         } else {
           navigateTo('home');
@@ -3478,11 +3544,11 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             owner = record.get("owner_username")
             is_owner = bool(current_user and owner and current_user.lower() == owner.lower())
 
-            if mode == "inherited":
+            if mode in ("inherited", "stopped"):
                 if not key_b:
                     self.send_error_response(
                         HTTPStatus.BAD_REQUEST,
-                        "Record is in Inherited Mode. Both Key A and Key B must be provided to decrypt.",
+                        "Record requires both Key A and Key B to decrypt.",
                     )
                     return
                 effective_key_b = key_b
@@ -3503,7 +3569,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 else:
                     self.send_error_response(
                         HTTPStatus.BAD_REQUEST,
-                        "Key B is required to decrypt unless you are logged into the account that created this vault.",
+                        "Key B is required to decrypt without logging in as the vault owner. Please provide Key B.",
                     )
                     return
 

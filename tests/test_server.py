@@ -718,6 +718,64 @@ class TestServerIntegration(unittest.TestCase):
             self.assertIn(new_email, inh_res["recipients"])
             self.assertIn(second_email, inh_res["recipients"])
 
+    def test_unauthenticated_heir_decryption_with_key_a_and_key_b(self):
+        """
+        Test that an inheriting recipient without any login/session can decrypt
+        a vault when possessing both Key A and Key B.
+        """
+        # 1. Register owner & create vault
+        owner = "vault_owner_test"
+        reg_payload = json.dumps({"username": owner, "password": "password123"}).encode("utf-8")
+        reg_req = Request(f"{self.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            token = json.loads(resp.read().decode("utf-8"))["token"]
+
+        secret_text = "Inheritance secret message for heir"
+        enc_payload = json.dumps({
+            "text": secret_text,
+            "recipient_email": "heir.no.login@example.com"
+        }).encode("utf-8")
+        enc_req = Request(
+            f"{self.base_url}/api/encrypt",
+            data=enc_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with urlopen(enc_req) as resp:
+            enc_data = json.loads(resp.read().decode("utf-8"))
+            code = enc_data["code"]
+            key_a = enc_data["key_a"]
+
+        # Read server key B for verification
+        raw_rec = storage.load_vault_record(code, self.test_storage_dir)
+        key_b = raw_rec["server_key_b"]
+
+        # 2. Unauthenticated attempt without Key B -> 400 Bad Request
+        unauth_no_key_b = json.dumps({"code": code, "key_a": key_a}).encode("utf-8")
+        req_fail = Request(f"{self.base_url}/api/decrypt", data=unauth_no_key_b, headers={"Content-Type": "application/json"}, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(req_fail)
+        self.assertEqual(ctx.exception.code, 400)
+
+        # 3. Unauthenticated attempt WITH both Key A and Key B (No login, no token, no cookie) -> 200 OK
+        unauth_with_keys = json.dumps({"code": code, "key_a": key_a, "key_b": key_b}).encode("utf-8")
+        req_ok = Request(f"{self.base_url}/api/decrypt", data=unauth_with_keys, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(req_ok) as resp:
+            self.assertEqual(resp.status, 200)
+            dec_data = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(dec_data["status"], "success")
+            self.assertEqual(dec_data["decrypted_text"], secret_text)
+
+        # 4. Trigger inheritance (switching vault mode to 'inherited')
+        storage.switch_to_inherited_mode(code, self.test_storage_dir)
+
+        # 5. Unauthenticated attempt in Inherited Mode with Key A and Key B -> 200 OK
+        with urlopen(req_ok) as resp:
+            self.assertEqual(resp.status, 200)
+            dec_data_inh = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(dec_data_inh["status"], "success")
+            self.assertEqual(dec_data_inh["decrypted_text"], secret_text)
+
 
 if __name__ == "__main__":
     unittest.main()

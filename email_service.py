@@ -61,6 +61,8 @@ def send_key_b_email(
     config = get_smtp_config()
     subject = f"[SecureVault] Key B Released for Code: {code}"
 
+    direct_link = f"{server_url}/#decrypt?code={code}&key_b={key_b}"
+
     # Plain text version
     text_content = f"""Hello,
 
@@ -72,11 +74,11 @@ Storage Code : {code}
 Key B        : {key_b}
 --------------------------------------------------
 
-To decrypt and retrieve the stored data:
-1. Visit {server_url}
-2. Open the 'Decrypt' section
-3. Enter the Storage Code: {code}
-4. Provide Key A (entrusted to you by the owner) and Key B (provided above)
+To decrypt and retrieve the stored data (NO LOGIN OR ACCOUNT REQUIRED):
+1. Visit the direct link: {direct_link}
+   (or visit {server_url} and open 'Decrypt')
+2. Enter the Storage Code: {code}
+3. Enter Key A (entrusted to you by the owner) and Key B (provided above)
 
 Both Key A and Key B are strictly required for Zero-Knowledge decryption.
 
@@ -101,6 +103,7 @@ SecureVault Custody Service
     h2 {{ color: #f0f6fc; margin-top: 0; }}
     .key-box {{ background: #090d13; border: 1px solid #bc8cff55; color: #bc8cff; font-family: monospace; font-size: 14px; padding: 12px; border-radius: 6px; word-break: break-all; margin: 12px 0; }}
     .code-box {{ background: #090d13; border: 1px solid #f2cc6055; color: #f2cc60; font-family: monospace; font-size: 16px; font-weight: bold; padding: 8px 12px; border-radius: 6px; display: inline-block; }}
+    .btn-decrypt {{ display: inline-block; background: #238636; color: #ffffff !important; padding: 12px 22px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; margin: 16px 0; }}
     .warning-box {{ background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.35); border-radius: 6px; padding: 12px; margin: 16px 0; font-size: 13px; color: #f85149; line-height: 1.45; }}
     .footer {{ font-size: 12px; color: #8b949e; margin-top: 20px; }}
   </style>
@@ -116,7 +119,13 @@ SecureVault Custody Service
     <p style="margin-top: 16px;"><strong>Key B (Released Key Share):</strong></p>
     <div class="key-box">{key_b}</div>
 
-    <p style="margin-top: 16px;">To decrypt this record, visit <a href="{server_url}" style="color: #58a6ff;">{server_url}</a>, open <em>Decrypt</em>, and provide both <strong>Key A</strong> and <strong>Key B</strong>.</p>
+    <div style="text-align: center; margin: 20px 0;">
+      <a href="{direct_link}" class="btn-decrypt">🔓 Direct Decrypt (No Login Required)</a>
+    </div>
+
+    <p style="font-size: 13px; color: #8b949e;">
+      You do <strong>not</strong> need to create an account or sign in. Simply open the link above (or visit <a href="{server_url}" style="color: #58a6ff;">{server_url}</a>), enter your <strong>Key A</strong> alongside <strong>Key B</strong>, and your data/files will be instantly decrypted in your browser.
+    </p>
 
     <div class="warning-box">
       <strong>⚠️ 30-Day Data Retention Policy:</strong><br>
