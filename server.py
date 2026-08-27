@@ -1142,9 +1142,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
       <div class="header-actions">
         <button class="nav-link-btn" id="nav-btn-home" onclick="navigateTo('home')" data-i18n="nav_overview">Übersicht</button>
-        <button class="nav-link-btn" id="nav-btn-app" onclick="navigateTo('app', 'encrypt')" data-i18n="nav_encrypt">Verschlüsseln</button>
-        <button class="nav-link-btn" onclick="navigateTo('app', 'decrypt')" data-i18n="nav_decrypt">Entschlüsseln</button>
-        <button class="nav-link-btn" id="nav-btn-vaults" onclick="navigateTo('app', 'vaults')" style="display: none;" data-i18n="nav_vaults">Meine Tresore</button>
         <button class="nav-link-btn" onclick="openInfoModal()" data-i18n="nav_info">Info</button>
         
         <!-- Language Switcher (DE base) -->
@@ -2063,7 +2060,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           document.getElementById('nav-auth-logged-out').style.display = 'none';
           document.getElementById('nav-auth-logged-in').style.display = 'flex';
           document.getElementById('nav-username').textContent = currentUser;
-          document.getElementById('nav-btn-vaults').style.display = 'inline-flex';
           document.getElementById('tab-btn-vaults').style.display = 'flex';
           
           document.getElementById('auth-guard-encrypt').style.display = 'none';
@@ -2075,7 +2071,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           currentUser = null;
           document.getElementById('nav-auth-logged-out').style.display = 'flex';
           document.getElementById('nav-auth-logged-in').style.display = 'none';
-          document.getElementById('nav-btn-vaults').style.display = 'none';
           document.getElementById('tab-btn-vaults').style.display = 'none';
 
           document.getElementById('auth-guard-encrypt').style.display = 'block';
