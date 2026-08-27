@@ -589,6 +589,31 @@ class TestServerIntegration(unittest.TestCase):
         # Verify file is permanently deleted from disk
         self.assertFalse(os.path.isfile(file_path))
 
+    def test_persistent_session_file_backed(self):
+        """Test that sessions persist to disk and authenticate across requests."""
+        # 1. Register persistent test user
+        p_user = "persistent_user"
+        reg_payload = json.dumps({"username": p_user, "password": "password123"}).encode("utf-8")
+        reg_req = Request(f"{self.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            p_token = data["token"]
+
+        # 2. Check that session file exists on disk
+        session_file = os.path.join(self.server.sessions_dir, f"{p_token}.json")
+        self.assertTrue(os.path.isfile(session_file))
+
+        # 3. Direct query via storage module
+        found_user = storage.get_session_username(p_token, self.server.sessions_dir)
+        self.assertEqual(found_user, p_user)
+
+        # 4. HTTP query to /api/me with Bearer token
+        me_req = Request(f"{self.base_url}/api/me", headers={"Authorization": f"Bearer {p_token}"}, method="GET")
+        with urlopen(me_req) as resp:
+            me_data = json.loads(resp.read().decode("utf-8"))
+            self.assertTrue(me_data["authenticated"])
+            self.assertEqual(me_data["username"], p_user)
+
 
 if __name__ == "__main__":
     unittest.main()

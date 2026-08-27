@@ -2858,21 +2858,22 @@ def ensure_self_signed_cert(cert_path: str = "cert.pem", key_path: str = "key.pe
         return cert_path, key_path
 
 
-# In-memory session token store: token -> {"username": username, "created_at": iso}
-SESSIONS: Dict[str, Dict] = {}
-
-
 def get_authenticated_user(handler: BaseHTTPRequestHandler) -> Optional[str]:
-    """Extract authenticated username from Authorization header, X-Auth-Token, or cookie."""
+    """Extract authenticated username from Authorization header, X-Auth-Token, or cookie with file-backed persistence."""
+    sessions_dir = getattr(handler.server, "sessions_dir", storage.DEFAULT_SESSIONS_DIR)
+
     auth_header = handler.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header[7:].strip()
-        if token in SESSIONS:
-            return SESSIONS[token]["username"]
+        user = storage.get_session_username(token, sessions_dir)
+        if user:
+            return user
 
     x_token = handler.headers.get("X-Auth-Token", "").strip()
-    if x_token and x_token in SESSIONS:
-        return SESSIONS[x_token]["username"]
+    if x_token:
+        user = storage.get_session_username(x_token, sessions_dir)
+        if user:
+            return user
 
     cookie_header = handler.headers.get("Cookie", "")
     if cookie_header:
@@ -2881,8 +2882,9 @@ def get_authenticated_user(handler: BaseHTTPRequestHandler) -> Optional[str]:
                 k, v = part.strip().split("=", 1)
                 if k == "sv_session":
                     token = v.strip()
-                    if token in SESSIONS:
-                        return SESSIONS[token]["username"]
+                    user = storage.get_session_username(token, sessions_dir)
+                    if user:
+                        return user
 
     return None
 
@@ -2994,10 +2996,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             try:
                 user_info = storage.save_user(username, password, self.server.users_dir)
                 token = secrets.token_hex(32)
-                SESSIONS[token] = {
-                    "username": user_info["username"],
-                    "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                }
+                storage.save_session(token, user_info["username"], duration_days=30, sessions_dir=self.server.sessions_dir)
                 cookie = f"sv_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"
                 self.send_json_response(HTTPStatus.OK, {
                     "status": "success",
@@ -3025,10 +3024,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             u_rec = storage.get_user(username, self.server.users_dir)
             display_user = u_rec.get("username") if u_rec else username
             token = secrets.token_hex(32)
-            SESSIONS[token] = {
-                "username": display_user,
-                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            }
+            storage.save_session(token, display_user, duration_days=30, sessions_dir=self.server.sessions_dir)
             cookie = f"sv_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"
             self.send_json_response(HTTPStatus.OK, {
                 "status": "success",
@@ -3040,16 +3036,17 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
 
         # Route: Logout user session
         if path == "/api/logout":
+            sessions_dir = self.server.sessions_dir
             auth_header = self.headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
-                SESSIONS.pop(auth_header[7:].strip(), None)
+                storage.delete_session(auth_header[7:].strip(), sessions_dir)
             cookie_header = self.headers.get("Cookie", "")
             if cookie_header:
                 for part in cookie_header.split(";"):
                     if "=" in part:
                         k, v = part.strip().split("=", 1)
                         if k == "sv_session":
-                            SESSIONS.pop(v.strip(), None)
+                            storage.delete_session(v.strip(), sessions_dir)
             cookie = "sv_session=; Path=/; HttpOnly; Max-Age=0"
             self.send_json_response(HTTPStatus.OK, {"status": "success", "message": "Logged out successfully."}, cookies=[cookie])
             return
@@ -3576,6 +3573,7 @@ class CodeGenServer(ThreadingHTTPServer):
         default_format="text",
         storage_dir=storage.DEFAULT_STORAGE_DIR,
         users_dir=None,
+        sessions_dir=None,
         key_bits=DEFAULT_KEY_BITS,
         inactivity_days=DEFAULT_INACTIVITY_DAYS,
     ):
@@ -3588,11 +3586,16 @@ class CodeGenServer(ThreadingHTTPServer):
             self.users_dir = users_dir
         else:
             self.users_dir = os.getenv("USERS_DIR", os.path.join(self.storage_dir, "users"))
+        if sessions_dir:
+            self.sessions_dir = sessions_dir
+        else:
+            self.sessions_dir = os.getenv("SESSIONS_DIR", os.path.join(self.storage_dir, "sessions"))
         self.key_bits = key_bits
         self.inactivity_days = inactivity_days
         self.is_ssl = False
         storage.ensure_storage_dir(self.storage_dir)
         storage.ensure_users_dir(self.users_dir)
+        storage.ensure_sessions_dir(self.sessions_dir)
 
 
 def parse_arguments() -> argparse.Namespace:

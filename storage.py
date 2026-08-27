@@ -15,6 +15,7 @@ import secrets
 
 DEFAULT_STORAGE_DIR = os.getenv("STORAGE_DIR", os.path.join(os.path.dirname(__file__), "data", "vault"))
 DEFAULT_USERS_DIR = os.getenv("USERS_DIR", os.path.join(os.path.dirname(__file__), "data", "users"))
+DEFAULT_SESSIONS_DIR = os.getenv("SESSIONS_DIR", os.path.join(os.path.dirname(__file__), "data", "sessions"))
 
 # Validator for alphanumeric storage codes (standard: 16 chars, flexible 8-32 chars)
 CODE_PATTERN = re.compile(r"^[a-zA-Z0-9]{8,32}$")
@@ -31,6 +32,100 @@ def ensure_users_dir(users_dir: str = DEFAULT_USERS_DIR) -> str:
     """Ensure that the users directory exists and return its path."""
     os.makedirs(users_dir, exist_ok=True)
     return users_dir
+
+
+def ensure_sessions_dir(sessions_dir: str = DEFAULT_SESSIONS_DIR) -> str:
+    """Ensure that the sessions directory exists and return its path."""
+    os.makedirs(sessions_dir, exist_ok=True)
+    return sessions_dir
+
+
+def save_session(
+    token: str,
+    username: str,
+    duration_days: int = 30,
+    sessions_dir: str = DEFAULT_SESSIONS_DIR,
+) -> Dict:
+    """Persist an authenticated user session to disk with expiration timestamp."""
+    ensure_sessions_dir(sessions_dir)
+    clean_token = token.strip()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    expires = now + datetime.timedelta(days=duration_days)
+
+    session_data = {
+        "token": clean_token,
+        "username": username.strip(),
+        "created_at": now.isoformat(),
+        "last_active_at": now.isoformat(),
+        "expires_at": expires.isoformat(),
+    }
+
+    file_path = os.path.join(sessions_dir, f"{clean_token}.json")
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(session_data, f, indent=2)
+
+    return session_data
+
+
+def get_session_username(
+    token: str, sessions_dir: str = DEFAULT_SESSIONS_DIR
+) -> Optional[str]:
+    """Retrieve username for a session token if valid and unexpired."""
+    if not token or not isinstance(token, str):
+        return None
+
+    clean_token = token.strip()
+    file_path = os.path.join(sessions_dir, f"{clean_token}.json")
+    if not os.path.isfile(file_path):
+        return None
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            session_data = json.load(f)
+
+        expires_str = session_data.get("expires_at")
+        if expires_str:
+            clean_exp = expires_str.replace("Z", "+00:00")
+            exp_time = datetime.datetime.fromisoformat(clean_exp)
+            if exp_time.tzinfo is None:
+                exp_time = exp_time.replace(tzinfo=datetime.timezone.utc)
+
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if now > exp_time:
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
+                return None
+
+        # Touch last_active_at
+        try:
+            session_data["last_active_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(session_data, f, indent=2)
+        except Exception:
+            pass
+
+        return session_data.get("username")
+    except Exception:
+        return None
+
+
+def delete_session(
+    token: str, sessions_dir: str = DEFAULT_SESSIONS_DIR
+) -> bool:
+    """Delete a persisted session file from disk upon logout."""
+    if not token or not isinstance(token, str):
+        return False
+    clean_token = token.strip()
+    file_path = os.path.join(sessions_dir, f"{clean_token}.json")
+    try:
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+            return True
+        return False
+    except Exception:
+        return False
 
 
 def validate_username(username: str) -> bool:
