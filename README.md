@@ -91,7 +91,18 @@ To enable live email delivery via Gmail:
 6. Copy this 16-character code (remove any spaces).
 
 ### 2. Configure Your `.env` File
-Create or update the `.env` file in the project root directory:
+Open the `.env` file in your terminal editor (create it from `.env.example` if it doesn't exist yet):
+
+```bash
+# 1. Create .env from template if missing
+cp -n .env.example .env
+
+# 2. Open and edit the file
+nano .env
+```
+*(In `nano`: Make your edits, press `Ctrl + O` then `Enter` to save, and `Ctrl + X` to exit. Alternatively, you can use `vim .env` or `code .env`).*
+
+Paste and adapt your configuration:
 
 ```env
 # Primary Server Configuration
