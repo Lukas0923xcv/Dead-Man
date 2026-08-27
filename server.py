@@ -2220,7 +2220,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function escapeJsStr(str) {
       if (!str) return '';
-      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      return String(str).split('\\\\').join('\\\\\\\\').split("'").join("\\\\'").split('"').join('&quot;');
     }
 
     async function loadUserVaults() {
