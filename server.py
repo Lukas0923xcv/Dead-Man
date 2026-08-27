@@ -1561,11 +1561,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div id="inh-error" class="alert alert-error" style="margin-top: 14px;"></div>
 
         <div id="inh-results" class="result-box">
-          <div class="alert alert-success">
-            <div data-i18n="inh_success"><strong>Nachlass übergeben:</strong> Schlüssel B wurde unwiderruflich aus dem Serverspeicher gelöscht.</div>
-          </div>
-
-          <div id="inh-email-status" class="alert alert-success" style="display: none;"></div>
+          <div id="inh-alert-status" class="alert alert-success" style="display: none;"></div>
 
           <div id="inh-key-field" class="item-card" style="display: none; margin-top: 8px;">
             <div class="item-header">
@@ -2480,23 +2476,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Handover failed.');
 
+        const alertStatus = document.getElementById('inh-alert-status');
         const keyField = document.getElementById('inh-key-field');
-        const emailStatus = document.getElementById('inh-email-status');
 
         if (data.recipient_email) {
           keyField.style.display = 'none';
-          const msg = currentLang === 'de'
-            ? `✉️ Schlüssel B wurde direkt gesendet an: <strong>${data.recipient_email}</strong>. Aus Datenschutzgründen wird Schlüssel B nicht auf diesem Bildschirm angezeigt.`
-            : `✉️ Key B has been sent directly to: <strong>${data.recipient_email}</strong>. For privacy, Key B is not displayed on this screen.`;
-          emailStatus.innerHTML = msg;
-          emailStatus.style.display = 'block';
+          alertStatus.innerHTML = `🚀 ${I18N[currentLang].inh_success}`;
+          alertStatus.style.display = 'block';
         } else if (data.key_b) {
           document.getElementById('res-key-b').textContent = data.key_b;
           keyField.style.display = 'block';
-          emailStatus.style.display = 'none';
+          alertStatus.innerHTML = `🚀 <strong>${currentLang === 'de' ? 'Nachlass übergeben' : 'Custody Handover Executed'}:</strong> ${currentLang === 'de' ? 'Schlüssel B wurde freigegeben und vom Server gelöscht.' : 'Key B has been released and purged from server.'}`;
+          alertStatus.style.display = 'block';
         } else {
           keyField.style.display = 'none';
-          emailStatus.style.display = 'none';
+          alertStatus.innerHTML = `🚀 ${I18N[currentLang].inh_success}`;
+          alertStatus.style.display = 'block';
         }
 
         resBox.style.display = 'block';
@@ -2534,11 +2529,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to disable auto-inheritance.');
 
-        const emailStatus = document.getElementById('inh-email-status');
+        const alertStatus = document.getElementById('inh-alert-status');
         const keyField = document.getElementById('inh-key-field');
         keyField.style.display = 'none';
-        emailStatus.innerHTML = `♾️ ${I18N[currentLang].inh_stopped_success}`;
-        emailStatus.style.display = 'block';
+        alertStatus.innerHTML = `🛑 ${I18N[currentLang].inh_stopped_success}`;
+        alertStatus.style.display = 'block';
         resBox.style.display = 'block';
       } catch (err) {
         errBox.textContent = err.message;
