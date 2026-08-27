@@ -1018,6 +1018,54 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border-radius: 10px;
       margin-left: 4px;
     }
+    .storage-quota-card {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .storage-quota-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .storage-quota-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-bright);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .storage-quota-numbers {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .storage-progress-track {
+      width: 100%;
+      height: 8px;
+      background: var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .storage-progress-bar {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.3s ease, background 0.3s ease;
+      background: linear-gradient(90deg, #6366f1, #3b82f6);
+    }
+    .storage-quota-subtext {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     .vaults-list {
       display: flex;
       flex-direction: column;
@@ -1760,6 +1808,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <div id="vaults-loading" style="text-align: center; padding: 24px; color: var(--text-muted);">
             Lade Ihre Tresore...
           </div>
+
+          <!-- User Storage Quota Bar (10 GB Limit) -->
+          <div id="vaults-storage-card" class="storage-quota-card" style="display: none;">
+            <div class="storage-quota-header">
+              <div class="storage-quota-title">
+                <span>💾</span>
+                <span data-i18n="vaults_storage_title">Speicherplatz-Nutzung</span>
+              </div>
+              <div class="storage-quota-numbers" id="storage-quota-numbers">
+                0 B / 10.0 GB (0.0%)
+              </div>
+            </div>
+            <div class="storage-progress-track">
+              <div class="storage-progress-bar" id="storage-progress-bar" style="width: 0%;"></div>
+            </div>
+            <div class="storage-quota-subtext">
+              <span id="storage-quota-subtext-left">10.0 GB frei von 10.0 GB Gesamtspeicher</span>
+              <span id="storage-quota-subtext-right">Max. 10 GB / Konto</span>
+            </div>
+          </div>
+
           <div id="vaults-empty" style="display: none; text-align: center; padding: 28px 16px; color: var(--text-muted);">
             <div style="font-size: 28px; margin-bottom: 8px;">📂</div>
             <div style="font-size: 13px; font-weight: 600;" data-i18n="vaults_empty">Sie haben aktuell noch keine Daten verschlüsselt.</div>
@@ -1861,6 +1930,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         
         vaults_title: "Meine Tresore & Verwahrungen",
         vaults_subtitle: "Übersicht aller von Ihrem Konto verschlüsselten Dateien, Texte und Nachlässe.",
+        vaults_storage_title: "Speicherplatz-Nutzung (10 GB Limit)",
         vaults_empty: "Sie haben aktuell noch keine Daten verschlüsselt.",
         vaults_btn_encrypt_now: "Jetzt ersten Tresor erstellen",
         vaults_refresh: "Aktualisieren",
@@ -1987,6 +2057,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         tab_encrypt: "Encrypt",
         tab_decrypt: "Decrypt",
         tab_inherit: "Handover",
+        
+        vaults_title: "My Vaults & Custody",
+        vaults_subtitle: "Overview of all encrypted files, texts, and inheritances on your account.",
+        vaults_storage_title: "Storage Quota (10 GB Limit)",
+        vaults_empty: "You have not encrypted any data yet.",
+        vaults_btn_encrypt_now: "Create your first vault",
+        vaults_refresh: "Refresh",
         
         enc_title: "Encrypt & Store Confidentially",
         enc_subtitle: "Zero-Knowledge storage with 256-bit split key & automatic 30-day inactivity emergency handover.",
@@ -2246,6 +2323,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if (countBadge) {
           countBadge.textContent = vaults.length;
           countBadge.style.display = vaults.length > 0 ? 'inline-block' : 'none';
+        }
+
+        if (data.storage) {
+          const s = data.storage;
+          const numEl = document.getElementById('storage-quota-numbers');
+          if (numEl) numEl.textContent = `${s.used_formatted} / ${s.limit_formatted} (${s.percentage}%)`;
+          const bar = document.getElementById('storage-progress-bar');
+          if (bar) {
+            bar.style.width = Math.min(100, Math.max(s.used_bytes > 0 ? 1 : 0, s.percentage)) + '%';
+            if (s.percentage >= 90) {
+              bar.style.background = 'var(--danger, #f85149)';
+            } else if (s.percentage >= 75) {
+              bar.style.background = '#d29922';
+            } else {
+              bar.style.background = 'linear-gradient(90deg, #6366f1, #3b82f6)';
+            }
+          }
+          const leftEl = document.getElementById('storage-quota-subtext-left');
+          if (leftEl) {
+            leftEl.textContent = currentLang === 'de'
+              ? `${s.remaining_formatted} frei von ${s.limit_formatted} Gesamtspeicher`
+              : `${s.remaining_formatted} free of ${s.limit_formatted} total storage`;
+          }
+          const card = document.getElementById('vaults-storage-card');
+          if (card) card.style.display = 'block';
         }
 
         if (vaults.length === 0) {
@@ -3319,6 +3421,12 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 return
 
             storage.touch_user_vaults(current_user, self.server.storage_dir)
+            user_limit = getattr(self.server, "user_storage_limit_bytes", storage.DEFAULT_USER_STORAGE_LIMIT_BYTES)
+            user_storage = storage.get_user_storage_usage(
+                username=current_user,
+                limit_bytes=user_limit,
+                storage_dir=self.server.storage_dir
+            )
             vaults = storage.get_user_vaults(
                 username=current_user,
                 inactivity_days=int(self.server.inactivity_days),
@@ -3327,6 +3435,7 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
             self.send_json_response(HTTPStatus.OK, {
                 "status": "success",
                 "username": current_user,
+                "storage": user_storage,
                 "vaults": vaults,
                 "count": len(vaults),
             })
@@ -3507,6 +3616,22 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 encrypted_text = crypto_result["encrypted_text"]
 
                 storage_dir = self.server.storage_dir
+                
+                # Check 10 GB Storage Quota for current user
+                estimated_new_size = len(encrypted_text.encode("utf-8")) + 512
+                user_limit = getattr(self.server, "user_storage_limit_bytes", storage.DEFAULT_USER_STORAGE_LIMIT_BYTES)
+                current_usage = storage.get_user_storage_usage(
+                    username=current_user,
+                    limit_bytes=user_limit,
+                    storage_dir=storage_dir
+                )
+                if current_usage["used_bytes"] + estimated_new_size > user_limit:
+                    self.send_error_response(
+                        HTTPStatus.BAD_REQUEST,
+                        f"Speicherlimit von {current_usage['limit_formatted']} überschritten. Ihr Konto nutzt aktuell {current_usage['used_formatted']} ({current_usage['percentage']}%). Bitte löschen Sie ältere Tresore oder Dateien."
+                    )
+                    return
+
                 while True:
                     code = generate_code(length=16, charset="alphanumeric")
                     if not storage.code_exists(code, storage_dir):
@@ -4098,6 +4223,7 @@ class CodeGenServer(ThreadingHTTPServer):
         sessions_dir=None,
         key_bits=DEFAULT_KEY_BITS,
         inactivity_days=DEFAULT_INACTIVITY_DAYS,
+        user_storage_limit_bytes=storage.DEFAULT_USER_STORAGE_LIMIT_BYTES,
     ):
         super().__init__(server_address, RequestHandlerClass)
         self.default_length = default_length
@@ -4114,6 +4240,7 @@ class CodeGenServer(ThreadingHTTPServer):
             self.sessions_dir = os.getenv("SESSIONS_DIR", os.path.join(self.storage_dir, "sessions"))
         self.key_bits = key_bits
         self.inactivity_days = inactivity_days
+        self.user_storage_limit_bytes = int(user_storage_limit_bytes)
         self.is_ssl = False
         storage.ensure_storage_dir(self.storage_dir)
         storage.ensure_users_dir(self.users_dir)
@@ -4159,6 +4286,12 @@ def parse_arguments() -> argparse.Namespace:
         type=int,
         default=int(os.getenv("INACTIVITY_DAYS", str(DEFAULT_INACTIVITY_DAYS))),
         help=f"Days of inactivity before automatic inheritance trigger (default: {DEFAULT_INACTIVITY_DAYS})",
+    )
+    parser.add_argument(
+        "--user-storage-limit",
+        type=int,
+        default=int(os.getenv("USER_STORAGE_LIMIT_BYTES", str(storage.DEFAULT_USER_STORAGE_LIMIT_BYTES))),
+        help=f"Max storage quota in bytes per user (default: {storage.DEFAULT_USER_STORAGE_LIMIT_BYTES} bytes / 10 GB)",
     )
     parser.add_argument(
         "--ssl",
@@ -4230,6 +4363,7 @@ def run_server() -> None:
         storage_dir=args.storage_dir,
         key_bits=args.key_bits,
         inactivity_days=args.inactivity_days,
+        user_storage_limit_bytes=args.user_storage_limit,
     )
 
     proto = "http"

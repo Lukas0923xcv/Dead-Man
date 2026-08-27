@@ -16,6 +16,7 @@ import secrets
 DEFAULT_STORAGE_DIR = os.getenv("STORAGE_DIR", os.path.join(os.path.dirname(__file__), "data", "vault"))
 DEFAULT_USERS_DIR = os.getenv("USERS_DIR", os.path.join(os.path.dirname(__file__), "data", "users"))
 DEFAULT_SESSIONS_DIR = os.getenv("SESSIONS_DIR", os.path.join(os.path.dirname(__file__), "data", "sessions"))
+DEFAULT_USER_STORAGE_LIMIT_BYTES = int(os.getenv("USER_STORAGE_LIMIT_BYTES", str(10 * 1024 * 1024 * 1024)))  # 10 GB limit per user
 
 # Validator for alphanumeric storage codes (standard: 16 chars, flexible 8-32 chars)
 CODE_PATTERN = re.compile(r"^[a-zA-Z0-9]{8,32}$")
@@ -825,5 +826,47 @@ def get_user_vaults(
             })
 
     return user_vaults
+
+
+def get_user_storage_usage(
+    username: str,
+    limit_bytes: int = DEFAULT_USER_STORAGE_LIMIT_BYTES,
+    storage_dir: str = DEFAULT_STORAGE_DIR,
+) -> Dict:
+    """
+    Calculate the total storage currently used by a specific user across all their vault records.
+    Returns byte counts, formatted strings, quota limit, and usage percentage.
+    """
+    ensure_storage_dir(storage_dir)
+    clean_user = username.strip().lower()
+    total_bytes = 0
+    vault_count = 0
+
+    for filename in os.listdir(storage_dir):
+        if not filename.endswith(".json"):
+            continue
+        file_path = os.path.join(storage_dir, filename)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                record = json.load(f)
+            if (record.get("owner_username") or "").lower() == clean_user:
+                total_bytes += os.path.getsize(file_path)
+                vault_count += 1
+        except Exception:
+            continue
+
+    pct = round((total_bytes / limit_bytes) * 100, 2) if limit_bytes > 0 else 0.0
+
+    return {
+        "username": username,
+        "used_bytes": total_bytes,
+        "used_formatted": format_file_size(total_bytes),
+        "limit_bytes": limit_bytes,
+        "limit_formatted": format_file_size(limit_bytes),
+        "percentage": min(100.0, pct),
+        "vault_count": vault_count,
+        "remaining_bytes": max(0, limit_bytes - total_bytes),
+        "remaining_formatted": format_file_size(max(0, limit_bytes - total_bytes)),
+    }
 
 

@@ -852,6 +852,62 @@ class TestServerIntegration(unittest.TestCase):
             rename_res = json.loads(resp.read().decode("utf-8"))
             self.assertEqual(rename_res["vault_name"], name_via_key_a)
 
+    def test_user_storage_quota_tracking_and_limit_enforcement(self):
+        """
+        Test user storage quota tracking in /api/my-vaults and quota limit enforcement on /api/encrypt.
+        """
+        user = "quota_user"
+        reg_payload = json.dumps({"username": user, "password": "securepassword"}).encode("utf-8")
+        reg_req = Request(f"{self.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            token = json.loads(resp.read().decode("utf-8"))["token"]
+
+        # 1. Initial storage usage should be 0
+        list_req = Request(
+            f"{self.base_url}/api/my-vaults",
+            headers={"Authorization": f"Bearer {token}"},
+            method="GET"
+        )
+        with urlopen(list_req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertIn("storage", data)
+            self.assertEqual(data["storage"]["used_bytes"], 0)
+            self.assertEqual(data["storage"]["limit_bytes"], 10 * 1024 * 1024 * 1024)
+            self.assertEqual(data["storage"]["percentage"], 0.0)
+
+        # 2. Encrypt a payload
+        enc_payload = json.dumps({
+            "text": "Storage quota test payload data 12345",
+            "recipient_email": "quota.heir@example.ch",
+        }).encode("utf-8")
+        enc_req = Request(
+            f"{self.base_url}/api/encrypt",
+            data=enc_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with urlopen(enc_req) as resp:
+            self.assertEqual(resp.status, 200)
+
+        # 3. Check that storage used increases
+        with urlopen(list_req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertGreater(data["storage"]["used_bytes"], 0)
+            self.assertEqual(data["storage"]["vault_count"], 1)
+
+        # 4. Test quota limit enforcement by setting small limit on server temporarily
+        orig_limit = self.server.user_storage_limit_bytes
+        try:
+            # Set limit lower than current usage to trigger quota exceeded error
+            self.server.user_storage_limit_bytes = 100  # 100 bytes limit
+            with self.assertRaises(HTTPError) as ctx:
+                urlopen(enc_req)
+            self.assertEqual(ctx.exception.code, 400)
+            err_data = json.loads(ctx.exception.read().decode("utf-8"))
+            self.assertIn("Speicherlimit", err_data["error"])
+        finally:
+            self.server.user_storage_limit_bytes = orig_limit
+
 
 if __name__ == "__main__":
     unittest.main()
