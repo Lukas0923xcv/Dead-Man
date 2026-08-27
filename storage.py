@@ -355,6 +355,31 @@ def touch_record_activity(code: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> 
     return True
 
 
+def update_recipient_email(
+    code: str, new_email: str, storage_dir: str = DEFAULT_STORAGE_DIR
+) -> Dict:
+    """
+    Update the recipient email address for an existing vault record in Normal mode.
+    """
+    record = load_vault_record(code, storage_dir)
+    if record is None:
+        raise ValueError(f"No vault record found for code '{code}'.")
+
+    if record.get("mode") == "inherited":
+        raise ValueError("Cannot change recipient email: Vault has already been transferred to Inherited mode.")
+
+    clean_email = (new_email or "").strip()
+    if not clean_email or "@" not in clean_email or "." not in clean_email.split("@")[-1]:
+        raise ValueError("A valid email address with '@' and domain is required.")
+
+    record["recipient_email"] = clean_email
+    file_path = get_file_path(code, storage_dir)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(record, f, indent=2)
+
+    return record
+
+
 def touch_device_activity(device_id: str, storage_dir: str = DEFAULT_STORAGE_DIR) -> int:
     """
     Update the last_active_at timestamp for all records bound to a given device_id.
@@ -638,6 +663,7 @@ def get_all_vault_statuses(
                 "seconds_remaining": seconds_remaining,
                 "time_left_formatted": time_left_formatted,
                 "has_recipient_email": has_recipient,
+                "recipient_email": record.get("recipient_email"),
             })
         except Exception:
             continue

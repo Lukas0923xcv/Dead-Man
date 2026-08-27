@@ -614,6 +614,81 @@ class TestServerIntegration(unittest.TestCase):
             self.assertTrue(me_data["authenticated"])
             self.assertEqual(me_data["username"], p_user)
 
+    def test_update_recipient_email_api(self):
+        """Test updating the recipient email for a vault record."""
+        # 1. Register test user
+        upd_user = "user_email_test"
+        reg_payload = json.dumps({"username": upd_user, "password": "password123"}).encode("utf-8")
+        reg_req = Request(f"{self.base_url}/api/register", data=reg_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urlopen(reg_req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            token = data["token"]
+
+        # 2. Encrypt a vault record with initial recipient
+        enc_payload = json.dumps({
+            "text": "Secret with initial recipient",
+            "recipient_email": "initial.heir@example.com"
+        }).encode("utf-8")
+        enc_req = Request(
+            f"{self.base_url}/api/encrypt",
+            data=enc_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with urlopen(enc_req) as resp:
+            enc_data = json.loads(resp.read().decode("utf-8"))
+            code = enc_data["code"]
+            key_a = enc_data["key_a"]
+
+        # Verify initial recipient in record
+        rec = storage.load_vault_record(code, self.test_storage_dir)
+        self.assertEqual(rec["recipient_email"], "initial.heir@example.com")
+
+        # 3. Unauthorized update attempt without credentials -> 401
+        unauth_payload = json.dumps({"code": code, "email": "hacked@example.com"}).encode("utf-8")
+        unauth_req = Request(f"{self.base_url}/api/update-recipient", data=unauth_payload, headers={"Content-Type": "application/json"}, method="POST")
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(unauth_req)
+        self.assertEqual(ctx.exception.code, 401)
+
+        # 4. Update with invalid email -> 400
+        bad_email_payload = json.dumps({"code": code, "email": "invalid-email"}).encode("utf-8")
+        bad_req = Request(
+            f"{self.base_url}/api/update-recipient",
+            data=bad_email_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(bad_req)
+        self.assertEqual(ctx.exception.code, 400)
+
+        # 5. Authorized update as owner -> 200 OK
+        new_email = "new.heir2026@example.ch"
+        upd_payload = json.dumps({"code": code, "email": new_email}).encode("utf-8")
+        upd_req = Request(
+            f"{self.base_url}/api/update-recipient",
+            data=upd_payload,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            method="POST"
+        )
+        with urlopen(upd_req) as resp:
+            self.assertEqual(resp.status, 200)
+            res_data = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(res_data["status"], "success")
+            self.assertEqual(res_data["recipient_email"], new_email)
+
+        # Verify record updated on disk
+        updated_rec = storage.load_vault_record(code, self.test_storage_dir)
+        self.assertEqual(updated_rec["recipient_email"], new_email)
+
+        # 6. Verify in /api/my-vaults
+        vaults_req = Request(f"{self.base_url}/api/my-vaults", headers={"Authorization": f"Bearer {token}"}, method="GET")
+        with urlopen(vaults_req) as resp:
+            v_data = json.loads(resp.read().decode("utf-8"))
+            user_vault = next(v for v in v_data["vaults"] if v["code"] == code)
+            self.assertEqual(user_vault["recipient_email"], new_email)
+
 
 if __name__ == "__main__":
     unittest.main()

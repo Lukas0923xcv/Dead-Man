@@ -1399,6 +1399,49 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <!-- =====================================================================
+         UPDATE RECIPIENT EMAIL MODAL
+         ===================================================================== -->
+    <div id="update-email-modal" class="modal-overlay" onclick="closeUpdateEmailModalOnBackdrop(event)">
+      <div class="modal-container" style="max-width: 430px;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(99, 102, 241, 0.12); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              ✉️
+            </div>
+            <span data-i18n="update_email_modal_title">Empfänger-E-Mail ändern</span>
+          </div>
+          <button class="modal-close-btn" onclick="closeUpdateEmailModal()" title="Schliessen">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <form id="update-email-form" onsubmit="handleSaveRecipientEmail(event)">
+            <p style="font-size: 13px; line-height: 1.5; color: var(--text); margin-bottom: 14px;">
+              <span data-i18n="update_email_modal_desc">Hinterlegen Sie die neue E-Mail-Adresse für den Tresor</span> <strong id="update-email-code-display" style="font-family: 'JetBrains Mono', monospace; background: var(--card-subtle); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);"></strong>:
+            </p>
+
+            <div class="form-group">
+              <label for="update-email-input" data-i18n="enc_label_email">Empfänger-E-Mail (Pflichtfeld)</label>
+              <input type="email" id="update-email-input" required placeholder="empfaenger@example.com">
+            </div>
+
+            <div id="update-email-key-group" class="form-group" style="display: none;">
+              <label for="update-email-key-a" data-i18n="label_inh_key_a">Schlüssel A (zur Autorisierung)</label>
+              <input type="text" id="update-email-key-a" placeholder="Schlüssel A einfügen...">
+            </div>
+
+            <div id="update-email-error" class="alert alert-error" style="display: none; margin-bottom: 12px;"></div>
+            <div id="update-email-success" class="alert alert-success" style="display: none; margin-bottom: 12px;"></div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px;">
+              <button type="button" class="btn-copy" style="padding: 9px 16px; font-size: 13px;" onclick="closeUpdateEmailModal()" data-i18n="delete_modal_cancel">Abbrechen</button>
+              <button type="submit" class="btn-main" id="update-email-submit-btn" style="width: auto; padding: 9px 18px;" data-i18n="btn_save_email">Speichern</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
          VAULT SUBPAGE VIEW (ENCRYPT, DECRYPT, INHERIT, MY VAULTS)
          ===================================================================== -->
     <div id="view-app">
@@ -1868,52 +1911,43 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         auth_btn_register: "Create Account",
         auth_toggle_to_register: "Don't have an account? Register now →",
         auth_toggle_to_login: "Already have an account? Sign in →",
-        auth_guard_title: "Authentication Required",
-        auth_guard_desc: "Please sign in or register to encrypt new data and view your personal vaults.",
-        auth_guard_btn: "Sign In / Register",
+        tab_inherit: "Handover",
         
-        vaults_title: "My Vaults & Records",
-        vaults_subtitle: "Complete overview of all encrypted files, notes, and handovers stored under your account.",
-        vaults_empty: "You have not encrypted any records yet.",
-        vaults_btn_encrypt_now: "Create First Vault",
-        vaults_refresh: "Refresh",
-        
-        enc_title: "Encrypt Data & Documents",
-        enc_subtitle: "Client-side Dual-Key Split. The server cannot inspect or access your data.",
-        enc_label_text: "Confidential Notes / Information",
-        enc_hint_text: "(Optional if attaching a file)",
-        enc_ph_text: "Enter sensitive notes, credentials, or instructions...",
-        enc_label_file: "Attach File",
-        enc_hint_file: "(Optional — end-to-end encrypted)",
-        dropzone_text: "Click to choose a file or drag & drop",
-        dropzone_hint: "Documents, PDFs, Images, Archives — any file format",
+        enc_title: "Encrypt & Store Confidentially",
+        enc_subtitle: "Zero-Knowledge storage with 256-bit split key & automatic 30-day inactivity emergency handover.",
+        enc_label_text: "Secret Text / Password / Notes",
+        enc_ph_text: "Enter secret message, recovery seeds, PINs, or credentials...",
+        enc_label_file: "Attach Confidential File (Optional)",
+        dropzone_drag: "Drag & drop file here, or",
+        dropzone_browse: "Browse",
+        dropzone_hint: "Documents, PDFs, images, archives — any format supported",
         enc_label_email: "Recipient Email for Emergency Handover (Required)",
-        enc_email_warning: "<strong>Cryptographic Inheritance Handover:</strong> After 30 days of inactivity, Key B is automatically dispatched to this recipient. A 30-day retrieval window then commences, after which all data is permanently purged for privacy.",
-        btn_encrypt_save: "Encrypt & Save",
-        enc_success: "Saved successfully. Under your account, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
+        enc_email_warning: "<strong>Cryptographic Emergency Handover:</strong> Key B is automatically dispatched to this recipient after 30 days of inactivity. A 30-day retrieval window follows before all data is permanently purged.",
+        btn_encrypt_save: "Encrypt & Store",
+        enc_success: "Successfully stored. On your account, you only need the <strong>Storage Code</strong> and <strong>Key A</strong> to decrypt.",
         label_storage_code: "Storage Code",
-        label_key_a: "Your Key A",
+        label_key_a: "Your Private Key A",
         
         dec_title: "Decrypt Data & Documents",
-        dec_subtitle: "Enter your Storage Code and Key A to retrieve your decrypted information.",
+        dec_subtitle: "Enter your storage code and Key A to retrieve your data.",
         dec_label_code: "Storage Code",
         dec_ph_code: "16-character code",
         dec_label_key_a: "Key A",
         dec_ph_key_a: "Paste Key A...",
         dec_label_key_b: "Key B",
-        dec_hint_key_b: "(Only needed if not signed into owner account or following inheritance handover)",
-        dec_ph_key_b: "Leave empty if logged into owner account...",
+        dec_hint_key_b: "(Only required if not logged in as owner or after handover)",
+        dec_ph_key_b: "Leave blank on own account...",
         btn_decrypt: "Decrypt",
         btn_download_file: "Download File",
         label_dec_text: "Decrypted Text",
         
-        inh_title: "Transfer Custody (Inheritance)",
-        inh_subtitle: "Releases Key B to the recipient or stops automated handover.",
-        inh_warning: "<strong>Automated Custody Handover:</strong> If no activity is registered for 30 days, Key B is dispatched to the designated recipient. A 30-day retrieval window begins upon transfer, after which all encrypted data is permanently deleted.",
-        label_inh_key_a: "Key A (for Authorization)",
-        btn_inherit: "🚀 Transfer Custody Now",
-        btn_stop_inherit: "🛑 Stop Auto-Inheritance Permanently",
-        inh_success: "<strong>Custody Handover Executed:</strong> Key B has been dispatched and removed from server memory. ⚠️ <strong>30-Day Retrieval Window:</strong> The recipient has 30 days to retrieve the data before the record is permanently deleted.",
+        inh_title: "Execute Handover (Inheritance)",
+        inh_subtitle: "Release Key B to recipient or disconnect automated handover.",
+        inh_warning: "<strong>Automated Emergency Handover:</strong> If no activity occurs for 30 days, Key B is dispatched to the registered recipient. Following handover or disconnection, 30 days remain before data is permanently purged.",
+        label_inh_key_a: "Key A (for authorization)",
+        btn_inherit: "🚀 Trigger Handover Now",
+        btn_stop_inherit: "🛑 Stop Handover Permanently",
+        inh_success: "<strong>Emergency Handover Triggered:</strong> Key B has been dispatched and permanently erased from the server. ⚠️ <strong>30-Day Retrieval Window:</strong> The recipient has 30 days to retrieve data before the record is permanently deleted.",
         inh_stopped_success: "<strong>Dead Man Switch Disconnected:</strong> Automated handover has been disabled. ⚠️ <strong>30-Day Purge Window:</strong> Following disconnection, you have 30 days to retrieve your data before it is permanently deleted from the server.",
         label_released_key_b: "Released Key B",
         
@@ -1926,6 +1960,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         delete_modal_cancel: "Cancel",
         delete_modal_confirm: "🗑️ Delete Permanently",
         delete_success_msg: "Vault and file were permanently deleted from the server.",
+        
+        update_email_modal_title: "Change Recipient Email",
+        update_email_modal_desc: "Specify the new recipient email address for vault",
+        btn_change_email: "Change Email",
+        btn_save_email: "Save",
+        update_email_success_msg: "Recipient email updated successfully.",
         
         btn_copy: "Copy",
         btn_copied: "Copied",
@@ -2122,9 +2162,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           let statusClass = 'active';
           let statusText = currentLang === 'de' ? 'Aktiv (Geschützt)' : 'Active (Secured)';
           let metaHtml = '';
-          const recipient = v.has_recipient_email 
-            ? (currentLang === 'de' ? '✉️ Empfänger hinterlegt' : '✉️ Recipient registered')
-            : '—';
+          const recipient = v.recipient_email
+            ? `✉️ ${v.recipient_email}`
+            : (v.has_recipient_email ? (currentLang === 'de' ? '✉️ Empfänger hinterlegt' : '✉️ Recipient registered') : '—');
 
           if (v.mode === 'inherited') {
             statusClass = 'inherited';
@@ -2158,6 +2198,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="vault-actions-row">
               <button class="btn-vault-action primary" onclick="openDecryptForCode('${v.code}')">🔓 ${currentLang === 'de' ? 'Entschlüsseln' : 'Decrypt'}</button>
               ${v.mode === 'normal' ? `
+                <button class="btn-vault-action" onclick="openUpdateEmailModal('${v.code}', '${v.recipient_email || ''}')">✉️ ${currentLang === 'de' ? 'E-Mail ändern' : 'Change Email'}</button>
                 <button class="btn-vault-action" onclick="openInheritForCode('${v.code}')">🚀 ${currentLang === 'de' ? 'Nachlass auslösen' : 'Trigger Handover'}</button>
                 <button class="btn-vault-action danger" onclick="openStopInheritForCode('${v.code}')">🛑 ${currentLang === 'de' ? 'Verbindung trennen' : 'Disconnect'}</button>
               ` : ''}
@@ -2172,6 +2213,100 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         loading.style.display = 'none';
         list.innerHTML = `<div class="alert alert-error" style="display:block;">${err.message}</div>`;
         list.style.display = 'block';
+      }
+    }
+
+    let pendingEmailCode = null;
+
+    function openUpdateEmailModal(code, currentEmail) {
+      pendingEmailCode = code;
+      const codeDisplay = document.getElementById('update-email-code-display');
+      if (codeDisplay) codeDisplay.textContent = code;
+      const emailInput = document.getElementById('update-email-input');
+      if (emailInput) emailInput.value = currentEmail || '';
+      const errBox = document.getElementById('update-email-error');
+      if (errBox) errBox.style.display = 'none';
+      const succBox = document.getElementById('update-email-success');
+      if (succBox) succBox.style.display = 'none';
+
+      const keyGroup = document.getElementById('update-email-key-group');
+      if (keyGroup) {
+        keyGroup.style.display = currentUser ? 'none' : 'block';
+      }
+
+      document.getElementById('update-email-modal').style.display = 'flex';
+      setTimeout(() => {
+        if (emailInput) {
+          emailInput.focus();
+          emailInput.select();
+        }
+      }, 100);
+    }
+
+    function closeUpdateEmailModal() {
+      pendingEmailCode = null;
+      document.getElementById('update-email-modal').style.display = 'none';
+    }
+
+    function closeUpdateEmailModalOnBackdrop(e) {
+      if (e.target.id === 'update-email-modal') {
+        closeUpdateEmailModal();
+      }
+    }
+
+    async function handleSaveRecipientEmail(e) {
+      e.preventDefault();
+      if (!pendingEmailCode) return;
+      const errBox = document.getElementById('update-email-error');
+      const succBox = document.getElementById('update-email-success');
+      const btn = document.getElementById('update-email-submit-btn');
+      const newEmail = document.getElementById('update-email-input').value.trim();
+      const keyAInput = document.getElementById('update-email-key-a');
+      const keyA = keyAInput ? keyAInput.value.trim() : '';
+
+      errBox.style.display = 'none';
+      succBox.style.display = 'none';
+
+      if (!newEmail || !newEmail.includes('@') || !newEmail.includes('.')) {
+        errBox.textContent = I18N[currentLang].err_email_req || 'Gültige E-Mail-Adresse erforderlich.';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = currentLang === 'de' ? 'Speichern...' : 'Saving...';
+
+      try {
+        const token = localStorage.getItem('sv_auth_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const payload = { code: pendingEmailCode, email: newEmail };
+        if (keyA) payload.key_a = keyA;
+
+        const res = await fetch('/api/update-recipient', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update recipient email.');
+
+        succBox.textContent = I18N[currentLang].update_email_success_msg || 'Empfänger-E-Mail wurde erfolgreich aktualisiert.';
+        succBox.style.display = 'block';
+
+        setTimeout(() => {
+          closeUpdateEmailModal();
+          if (currentUser) {
+            loadUserVaults();
+          }
+        }, 700);
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = I18N[currentLang].btn_save_email || 'Speichern';
       }
     }
 
@@ -2293,6 +2428,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         closeInfoModal();
         closeAuthModal();
         closeDeleteModal();
+        closeUpdateEmailModal();
       }
     });
 
@@ -3426,6 +3562,65 @@ class CodeGenRequestHandler(BaseHTTPRequestHandler):
                 })
             else:
                 self.send_error_response(HTTPStatus.INTERNAL_SERVER_ERROR, f"Could not delete file for code '{clean_code}'.")
+            return
+
+        # Route: Update recipient email address for an existing vault
+        if path in ("/api/update-recipient", "/api/update-email"):
+            code = data.get("code")
+            new_email = (data.get("email") or data.get("recipient_email") or "").strip()
+            key_a = data.get("key_a") or data.get("key")
+            current_user = get_authenticated_user(self)
+
+            if not code or not new_email:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, "Both 'code' and 'email' parameters are required.")
+                return
+
+            clean_code = str(code).strip()
+            storage_dir = self.server.storage_dir
+            record = storage.load_vault_record(clean_code, storage_dir)
+
+            if record is None:
+                self.send_error_response(HTTPStatus.NOT_FOUND, f"No vault record found for code '{clean_code}'.")
+                return
+
+            owner = record.get("owner_username")
+            authorized = False
+
+            # 1. Check if logged-in user is the owner
+            if owner and current_user and current_user.lower() == owner.lower():
+                authorized = True
+            # 2. Check if valid Key A provided
+            elif key_a:
+                server_key_b = record.get("server_key_b")
+                if server_key_b:
+                    try:
+                        decrypt_split(record["encrypted_text"], str(key_a).strip(), server_key_b.strip())
+                        authorized = True
+                    except Exception:
+                        pass
+                else:
+                    authorized = True
+            # 3. If record has no owner
+            elif not owner:
+                authorized = True
+
+            if not authorized:
+                self.send_error_response(
+                    HTTPStatus.UNAUTHORIZED,
+                    "Unauthorized. You must either be logged in as the owner of this vault or provide a valid Key A."
+                )
+                return
+
+            try:
+                updated_rec = storage.update_recipient_email(clean_code, new_email, storage_dir)
+                self.send_json_response(HTTPStatus.OK, {
+                    "status": "success",
+                    "code": clean_code,
+                    "recipient_email": updated_rec["recipient_email"],
+                    "message": f"Recipient email for vault '{clean_code}' was successfully updated to '{updated_rec['recipient_email']}'."
+                })
+            except Exception as e:
+                self.send_error_response(HTTPStatus.BAD_REQUEST, str(e))
             return
 
         self.send_error_response(HTTPStatus.NOT_FOUND, f"Endpoint '{self.path}' not found.")
